@@ -14,16 +14,214 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      articles: {
+        Row: {
+          author_id: string | null
+          body: string
+          category: string | null
+          cover_image: string | null
+          created_at: string
+          excerpt: string | null
+          id: string
+          keywords: string | null
+          meta_description: string | null
+          meta_title: string | null
+          published: boolean
+          published_at: string | null
+          slug: string
+          title: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          category?: string | null
+          cover_image?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          keywords?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          published?: boolean
+          published_at?: string | null
+          slug: string
+          title: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          category?: string | null
+          cover_image?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          keywords?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          published?: boolean
+          published_at?: string | null
+          slug?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      listings: {
+        Row: {
+          address: string | null
+          area_sqft: number | null
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string | null
+          cover_image: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          images: Json | null
+          moderation: Database["public"]["Enums"]["moderation_status"]
+          price: number
+          property_type: string
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          area_sqft?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          cover_image?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          images?: Json | null
+          moderation?: Database["public"]["Enums"]["moderation_status"]
+          price: number
+          property_type: string
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          area_sqft?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          cover_image?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          images?: Json | null
+          moderation?: Database["public"]["Enums"]["moderation_status"]
+          price?: number
+          property_type?: string
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          can_upload_reels: boolean
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          can_upload_reels?: boolean
+          created_at?: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          can_upload_reels?: boolean
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      reels: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          status: Database["public"]["Enums"]["moderation_status"]
+          thumbnail_url: string | null
+          title: string
+          user_id: string
+          video_url: string
+          views: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["moderation_status"]
+          thumbnail_url?: string | null
+          title: string
+          user_id: string
+          video_url: string
+          views?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["moderation_status"]
+          thumbnail_url?: string | null
+          title?: string
+          user_id?: string
+          video_url?: string
+          views?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "agent" | "user"
+      moderation_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +348,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "agent", "user"],
+      moderation_status: ["pending", "approved", "rejected"],
+    },
   },
 } as const
