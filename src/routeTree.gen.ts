@@ -11,7 +11,17 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SellRouteImport } from './routes/sell'
 import { Route as ReelsRouteImport } from './routes/reels'
+import { Route as PackagesRouteImport } from './routes/packages'
+import { Route as FaqsRouteImport } from './routes/faqs'
 import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as CreateListingRouteImport } from './routes/create-listing'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ArticlesRouteImport } from './routes/articles'
+import { Route as ArRouteImport } from './routes/ar'
+import { Route as AgenciesRouteImport } from './routes/agencies'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 
 const SellRoute = SellRouteImport.update({
@@ -24,9 +34,59 @@ const ReelsRoute = ReelsRouteImport.update({
   path: '/reels',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PackagesRoute = PackagesRouteImport.update({
+  id: '/packages',
+  path: '/packages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqsRoute = FaqsRouteImport.update({
+  id: '/faqs',
+  path: '/faqs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExploreRoute = ExploreRouteImport.update({
   id: '/explore',
   path: '/explore',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreateListingRoute = CreateListingRouteImport.update({
+  id: '/create-listing',
+  path: '/create-listing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArticlesRoute = ArticlesRouteImport.update({
+  id: '/articles',
+  path: '/articles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArRoute = ArRouteImport.update({
+  id: '/ar',
+  path: '/ar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgenciesRoute = AgenciesRouteImport.update({
+  id: '/agencies',
+  path: '/agencies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -37,34 +97,117 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
+  '/agencies': typeof AgenciesRoute
+  '/ar': typeof ArRoute
+  '/articles': typeof ArticlesRoute
+  '/auth': typeof AuthRoute
+  '/contact': typeof ContactRoute
+  '/create-listing': typeof CreateListingRoute
   '/explore': typeof ExploreRoute
+  '/faqs': typeof FaqsRoute
+  '/packages': typeof PackagesRoute
   '/reels': typeof ReelsRoute
   '/sell': typeof SellRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
+  '/agencies': typeof AgenciesRoute
+  '/ar': typeof ArRoute
+  '/articles': typeof ArticlesRoute
+  '/auth': typeof AuthRoute
+  '/contact': typeof ContactRoute
+  '/create-listing': typeof CreateListingRoute
   '/explore': typeof ExploreRoute
+  '/faqs': typeof FaqsRoute
+  '/packages': typeof PackagesRoute
   '/reels': typeof ReelsRoute
   '/sell': typeof SellRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
+  '/agencies': typeof AgenciesRoute
+  '/ar': typeof ArRoute
+  '/articles': typeof ArticlesRoute
+  '/auth': typeof AuthRoute
+  '/contact': typeof ContactRoute
+  '/create-listing': typeof CreateListingRoute
   '/explore': typeof ExploreRoute
+  '/faqs': typeof FaqsRoute
+  '/packages': typeof PackagesRoute
   '/reels': typeof ReelsRoute
   '/sell': typeof SellRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/explore' | '/reels' | '/sell'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/admin'
+    | '/agencies'
+    | '/ar'
+    | '/articles'
+    | '/auth'
+    | '/contact'
+    | '/create-listing'
+    | '/explore'
+    | '/faqs'
+    | '/packages'
+    | '/reels'
+    | '/sell'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/explore' | '/reels' | '/sell'
-  id: '__root__' | '/' | '/explore' | '/reels' | '/sell'
+  to:
+    | '/'
+    | '/about'
+    | '/admin'
+    | '/agencies'
+    | '/ar'
+    | '/articles'
+    | '/auth'
+    | '/contact'
+    | '/create-listing'
+    | '/explore'
+    | '/faqs'
+    | '/packages'
+    | '/reels'
+    | '/sell'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/admin'
+    | '/agencies'
+    | '/ar'
+    | '/articles'
+    | '/auth'
+    | '/contact'
+    | '/create-listing'
+    | '/explore'
+    | '/faqs'
+    | '/packages'
+    | '/reels'
+    | '/sell'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
+  AdminRoute: typeof AdminRoute
+  AgenciesRoute: typeof AgenciesRoute
+  ArRoute: typeof ArRoute
+  ArticlesRoute: typeof ArticlesRoute
+  AuthRoute: typeof AuthRoute
+  ContactRoute: typeof ContactRoute
+  CreateListingRoute: typeof CreateListingRoute
   ExploreRoute: typeof ExploreRoute
+  FaqsRoute: typeof FaqsRoute
+  PackagesRoute: typeof PackagesRoute
   ReelsRoute: typeof ReelsRoute
   SellRoute: typeof SellRoute
 }
@@ -85,11 +228,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReelsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/packages': {
+      id: '/packages'
+      path: '/packages'
+      fullPath: '/packages'
+      preLoaderRoute: typeof PackagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faqs': {
+      id: '/faqs'
+      path: '/faqs'
+      fullPath: '/faqs'
+      preLoaderRoute: typeof FaqsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/explore': {
       id: '/explore'
       path: '/explore'
       fullPath: '/explore'
       preLoaderRoute: typeof ExploreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/create-listing': {
+      id: '/create-listing'
+      path: '/create-listing'
+      fullPath: '/create-listing'
+      preLoaderRoute: typeof CreateListingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/articles': {
+      id: '/articles'
+      path: '/articles'
+      fullPath: '/articles'
+      preLoaderRoute: typeof ArticlesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ar': {
+      id: '/ar'
+      path: '/ar'
+      fullPath: '/ar'
+      preLoaderRoute: typeof ArRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agencies': {
+      id: '/agencies'
+      path: '/agencies'
+      fullPath: '/agencies'
+      preLoaderRoute: typeof AgenciesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -104,7 +317,17 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
+  AdminRoute: AdminRoute,
+  AgenciesRoute: AgenciesRoute,
+  ArRoute: ArRoute,
+  ArticlesRoute: ArticlesRoute,
+  AuthRoute: AuthRoute,
+  ContactRoute: ContactRoute,
+  CreateListingRoute: CreateListingRoute,
   ExploreRoute: ExploreRoute,
+  FaqsRoute: FaqsRoute,
+  PackagesRoute: PackagesRoute,
   ReelsRoute: ReelsRoute,
   SellRoute: SellRoute,
 }

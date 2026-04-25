@@ -44,8 +44,8 @@ function AdminPage() {
   };
 
   const moderate = async (table: "reels" | "listings", id: string, value: "approved" | "rejected") => {
-    const col = table === "reels" ? "status" : "moderation";
-    const { error } = await supabase.from(table).update({ [col]: value }).eq("id", id);
+    const payload: any = table === "reels" ? { status: value } : { moderation: value };
+    const { error } = await (supabase.from(table) as any).update(payload).eq("id", id);
     if (error) toast.error(error.message); else { toast.success("Updated"); loadAll(); }
   };
 
