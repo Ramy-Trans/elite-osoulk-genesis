@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { CheckCircle2, ShieldCheck, BadgeCheck, ArrowRight } from "lucide-react";
+import { CheckCircle2, ArrowRight } from "lucide-react";
 import property2 from "@/assets/property-2.jpg";
 import { ConsultationForm } from "@/components/site/ConsultationForm";
 import { SectionHeader } from "@/components/site/SectionHeader";
@@ -22,7 +22,7 @@ const STEPS = [
   { n: "03", t: "List your property & go live", d: "Add photos, details, and pricing. Your listing reaches qualified buyers within minutes." },
 ];
 
-export default function SellPage() {
+function SellPage() {
   return (
     <>
       <section className="container-luxe py-16 text-center">
@@ -93,6 +93,3 @@ export default function SellPage() {
     </>
   );
 }
-
-function SellPageWrap() { return <SellPage />; }
-Route.update({ component: SellPageWrap });

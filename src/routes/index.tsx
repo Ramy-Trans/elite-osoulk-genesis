@@ -282,7 +282,7 @@ function renderAnswer(text: string, links?: Record<string, string>) {
   return parts.map((part, i) => {
     const match = part.match(/^\{([a-z]+)\}$/);
     if (match && links[match[1]]) {
-      return <Link key={i} to={links[match[1]]} className="text-foreground font-medium luxe-link">{match[1]}</Link>;
+      return <a key={i} href={links[match[1]]} className="text-foreground font-medium luxe-link">{match[1]}</a>;
     }
     return <span key={i}>{part}</span>;
   });

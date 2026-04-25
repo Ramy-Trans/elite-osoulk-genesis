@@ -81,7 +81,9 @@ export const ARTICLES = [
   { slug: "interior-trends-2026", title: "Egyptian Luxury Interior Trends Defining 2026", excerpt: "Travertine, brushed brass, curved silhouettes — the references shaping high-end interiors.", category: "Lifestyle", cover: property1, author: "OSOULK Editorial", read: 7 },
 ];
 
-export const FAQS = [
+export type FaqItem = { q: string; a: string; links?: Record<string, string> };
+
+export const FAQS: FaqItem[] = [
   { q: "What is OSOULK?", a: "OSOULK is a modern real estate platform built to make buying, selling, and investing in property across Egypt smarter, faster, and more transparent. Read our story on the {about} page.", links: { about: "/about" } },
   { q: "How do I list my property on OSOULK?", a: "Create an account, complete your profile, and use our {sell} flow to publish your listing. Our team reviews submissions to ensure quality.", links: { sell: "/sell" } },
   { q: "Which compounds and areas can I find on OSOULK?", a: "We cover Egypt's most sought-after destinations including New Cairo, New Capital, North Coast, 6th of October, Madinaty, Galala and more. Browse them on {explore}.", links: { explore: "/explore" } },
