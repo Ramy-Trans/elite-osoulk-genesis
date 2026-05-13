@@ -1,45 +1,68 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MapPin, Phone, Mail, Clock } from "lucide-react";
-import { ConsultationForm } from "@/components/site/ConsultationForm";
+import { ConsultationForm, Footer, PageHero } from "@/components/osoulk/site";
+import { useLang } from "@/lib/language";
+import { MapPin, Phone, Map } from "lucide-react";
 
 export const Route = createFileRoute("/contact")({
-  head: () => ({ meta: [
-    { title: "Contact Us — OSOULK" },
-    { name: "description", content: "Talk to an OSOULK property consultant. Offices in New Cairo and Sheikh Zayed." },
-  ] }),
-  component: ContactPage,
+  head: () => ({
+    meta: [
+      { title: "Contact Osoulk — Expert Property Advice" },
+      { name: "description", content: "Contact Osoulk for property consultation, listing support, agency partnerships, and premium real estate advice." },
+      { property: "og:title", content: "Contact Osoulk" },
+    ],
+  }),
+  component: Contact,
 });
 
-function ContactPage() {
+function Contact() {
+  const { t } = useLang();
+
   return (
-    <div className="container-luxe py-16 grid lg:grid-cols-2 gap-12 items-start">
-      <div>
-        <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--gold)]">Contact</p>
-        <h1 className="mt-3 font-display text-5xl">Let's talk property.</h1>
-        <p className="mt-4 text-muted-foreground max-w-md">Whether you're buying, selling, or simply exploring — our consultants are ready to help.</p>
-
-        <div className="mt-10 space-y-6">
-          {[
-            { icon: MapPin, t: "Address", lines: ["North 90th, New Cairo 1, Egypt", "1st District, Al Sheikh Zayed, Egypt"] },
-            { icon: Phone, t: "Contacts", lines: ["(800) 987 6543", "Hotline: 19871"] },
-            { icon: Mail, t: "Email", lines: ["info@osoulk.com"] },
-            { icon: Clock, t: "Working Hours", lines: ["Sunday – Thursday", "10:00 AM – 5:00 PM"] },
-          ].map((c) => (
-            <div key={c.t} className="flex items-start gap-4">
-              <div className="h-11 w-11 grid place-items-center rounded-full bg-ink text-ivory shrink-0"><c.icon className="h-5 w-5" /></div>
-              <div>
-                <h3 className="font-display text-lg">{c.t}</h3>
-                {c.lines.map((l) => <p key={l} className="text-sm text-muted-foreground">{l}</p>)}
-              </div>
+    <main>
+      <PageHero
+        kicker={t("contact.kicker")}
+        title={t("contact.title")}
+        subtitle={t("contact.subtitle")}
+      />
+      <ConsultationForm />
+      <section className="py-10">
+        <div className="os-container grid gap-6 md:grid-cols-3">
+          <div className="premium-card p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <MapPin className="h-5 w-5 text-aqua" />
+              <h2 className="font-black text-navy">{t("contact.addressTitle")}</h2>
             </div>
-          ))}
+            <p className="text-muted-foreground whitespace-pre-line">{t("contact.addressText")}</p>
+          </div>
+          <div className="premium-card p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Phone className="h-5 w-5 text-aqua" />
+              <h2 className="font-black text-navy">{t("contact.contactsTitle")}</h2>
+            </div>
+            <p className="text-muted-foreground" dir="ltr">
+              +201025812666<br />
+              info@osoulk.com
+            </p>
+          </div>
+          <div className="premium-card overflow-hidden p-0">
+            <div className="flex items-center gap-2 px-6 py-4">
+              <Map className="h-5 w-5 text-aqua" />
+              <h2 className="font-black text-navy">{t("contact.mapTitle")}</h2>
+            </div>
+            <iframe
+              title="Osoulk Office Location"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3453.676!2d31.4!3d30.0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14583d6ef8eb32e9%3A0x49a583cde5e8bc1e!2sNew%20Cairo%20City%2C%20Cairo%20Governorate%2C%20Egypt!5e0!3m2!1sen!2seg!4v1700000000000!5m2!1sen!2seg"
+              width="100%"
+              height="180"
+              style={{ border: 0, display: "block" }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
         </div>
-
-        <div className="mt-10 aspect-video rounded-md overflow-hidden border border-border bg-secondary/60 grid place-items-center text-muted-foreground text-sm">
-          Map placeholder — connect Google Maps key in dashboard
-        </div>
-      </div>
-      <ConsultationForm compact />
-    </div>
+      </section>
+      <Footer />
+    </main>
   );
 }

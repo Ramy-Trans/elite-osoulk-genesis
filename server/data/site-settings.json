@@ -1,0 +1,63 @@
+{
+  "brandName": "Osoulk",
+  "tagline": "Egypt's premium real estate platform",
+  "contactPhone": "+201025812666",
+  "contactEmail": "hello@osoulk.com",
+  "whatsappNumber": "+201025812666",
+  "address": "Cairo, Egypt",
+  "logo": {
+    "url": "",
+    "title": "Osoulk",
+    "titleAr": "أصولك",
+    "altText": "Osoulk real estate logo",
+    "altTextAr": "شعار أصولك للعقارات",
+    "caption": "",
+    "captionAr": "",
+    "description": ""
+  },
+  "socials": {
+    "facebook": "",
+    "instagram": "",
+    "youtube": "",
+    "linkedin": "",
+    "tiktok": ""
+  },
+  "hero": {
+    "kicker": "The premium real-estate platform in Egypt",
+    "title": "Find your dream property in Egypt.",
+    "subtitle": "A premium real-estate experience for buyers, sellers, agencies and investors.",
+    "kickerAr": "المنصة العقارية الفاخرة في مصر",
+    "titleAr": "اعثر على عقار أحلامك في مصر.",
+    "subtitleAr": "تجربة عقارية فاخرة للمشترين والبائعين والوكالات والمستثمرين."
+  },
+  "heroSlides": [],
+  "promoBar": {
+    "enabled": true,
+    "text": "Limited offer — start now and get better real-estate results.",
+    "textAr": "عرض محدود — ابدأ الآن وحقق نتائج عقارية أفضل."
+  },
+  "features": {
+    "googleSignIn": true,
+    "newsletter": true,
+    "reels": true,
+    "brokerSignup": true,
+    "developerSignup": true
+  },
+  "theme": {
+    "accent": "gold",
+    "primaryColor": "#061E46",
+    "secondaryColor": "#22c4b7",
+    "ctaColor": "#c9a227",
+    "navbarBg": "#ffffff",
+    "navbarText": "#061E46",
+    "footerBg": "#061E46",
+    "footerText": "#ffffff",
+    "cardBg": "#ffffff",
+    "inputBg": "#f4f5f6"
+  },
+  "analytics": {
+    "gaTrackingId": "",
+    "enabled": false
+  },
+  "updatedAt": "2026-05-12T17:01:13.955Z"
+}

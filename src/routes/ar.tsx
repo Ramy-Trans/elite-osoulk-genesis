@@ -1,59 +1,82 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
-import { Scan, Cuboid, Smartphone, Sparkles } from "lucide-react";
-import arHero from "@/assets/ar-hero.jpg";
-import { SectionHeader } from "@/components/site/SectionHeader";
+import { createFileRoute } from "@tanstack/react-router";
+import { Footer, PageHero, icons, arImage } from "@/components/osoulk/site";
+import { Button } from "@/components/ui/button";
+import { useLang } from "@/lib/language";
 
 export const Route = createFileRoute("/ar")({
-  head: () => ({ meta: [
-    { title: "AR Property Experience — OSOULK" },
-    { name: "description", content: "Step inside any property — anytime, anywhere — with OSOULK's immersive AR experience." },
-  ] }),
-  component: ARPage,
+  head: () => ({
+    meta: [
+      { title: "تجربة AR العقارية — أصولك | AR Property Experience — Osoulk" },
+      { name: "description", content: "تجربة مستقبلية لاستعراض العقارات عبر الواقع المعزز على الهاتف المحمول." },
+      { property: "og:title", content: "AR Property Experience — Osoulk" },
+      { property: "og:description", content: "View premium property spaces through an immersive AR-ready concept." },
+    ],
+  }),
+  component: AR,
 });
 
-function ARPage() {
-  return (
-    <>
-      <section className="relative min-h-[80vh] flex items-center overflow-hidden bg-ink text-ivory">
-        <img src={arHero} alt="AR property preview" className="absolute inset-0 h-full w-full object-cover opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/70 to-transparent" />
-        <div className="container-luxe relative py-24">
-          <p className="text-xs uppercase tracking-[0.4em] text-[color:var(--gold)]">AR Experience</p>
-          <h1 className="mt-3 font-display text-6xl md:text-8xl max-w-3xl leading-[0.95]">Step inside.<br /><span className="italic text-[color:var(--gold)]">Anywhere.</span></h1>
-          <p className="mt-6 max-w-xl text-ivory/85">Tour properties in true 1:1 scale through our augmented-reality experience. Available on iPhone and Android.</p>
-          <div className="mt-8 flex gap-3 flex-wrap">
-            <Link to="/explore" className="px-7 py-3 rounded-sm gradient-gold text-[color:var(--gold-foreground)] text-sm">Try a property in AR</Link>
-            <Link to="/contact" className="px-7 py-3 rounded-sm border border-ivory/40 text-ivory text-sm">Request a demo</Link>
-          </div>
-        </div>
-      </section>
+function AR() {
+  const { Eye, Layers3, Camera } = icons;
+  const { lang } = useLang();
 
-      <section className="container-luxe py-24">
-        <SectionHeader eyebrow="How it works" title="Three taps to walk through any home" />
-        <div className="mt-14 grid md:grid-cols-3 gap-6">
-          {[
-            { icon: Smartphone, t: "Open the app", d: "Launch OSOULK on your phone or tablet." },
-            { icon: Scan, t: "Scan the floor", d: "Point your camera. We map your space in seconds." },
-            { icon: Cuboid, t: "Place the property", d: "Walk through the property in true scale, anywhere." },
-          ].map((c, i) => (
-            <motion.div key={c.t} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="rounded-xl bg-card border border-border p-7 shadow-card">
-              <div className="h-12 w-12 grid place-items-center rounded-full gradient-ink text-ivory"><c.icon className="h-5 w-5" /></div>
-              <h3 className="mt-4 font-display text-2xl">{c.t}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{c.d}</p>
-            </motion.div>
+  const features = [
+    {
+      Icon: Eye,
+      ar: "مسح العقار",
+      en: "Scan Property",
+      descAr: "وجّه كاميرتك نحو العقار لبدء تجربة AR.",
+      descEn: "Point your camera at the property to start the AR experience.",
+    },
+    {
+      Icon: Layers3,
+      ar: "وضع النموذج",
+      en: "Place Model",
+      descAr: "ضع نموذجاً ثلاثي الأبعاد للعقار في مساحتك الحقيقية.",
+      descEn: "Place a 3D model of the property in your real space.",
+    },
+    {
+      Icon: Camera,
+      ar: "حجز معاينة",
+      en: "Book Viewing",
+      descAr: "احجز معاينة فورية من خلال التجربة.",
+      descEn: "Book an instant viewing directly from the experience.",
+    },
+  ];
+
+  return (
+    <main>
+      <PageHero
+        kicker={lang === "ar" ? "تجربة AR" : "AR Experience"}
+        title={lang === "ar" ? "شاهد المساحة قبل أن تصل." : "View spaces before you arrive."}
+        subtitle={lang === "ar"
+          ? "مفهوم مستقبلي للهاتف أولاً — مسح، عرض في الفضاء، وتصور موجّه للعقارات المميزة."
+          : "A futuristic, mobile-first AR concept for scan, view-in-space, and guided property visualization."
+        }
+        image={arImage}
+      />
+      <section className="py-16">
+        <div className="os-container grid gap-6 lg:grid-cols-3">
+          {features.map(({ Icon, ar, en, descAr, descEn }) => (
+            <div key={en} className="premium-card p-8">
+              <Icon className="text-aqua" />
+              <h2 className="mt-4 text-3xl font-black text-navy">{lang === "ar" ? ar : en}</h2>
+              <p className="mt-3 text-muted-foreground">{lang === "ar" ? descAr : descEn}</p>
+            </div>
           ))}
         </div>
-      </section>
-
-      <section className="bg-ink text-ivory py-20">
-        <div className="container-luxe text-center">
-          <Sparkles className="h-7 w-7 mx-auto text-[color:var(--gold)]" />
-          <h3 className="mt-4 font-display text-4xl max-w-2xl mx-auto">The future of property is immersive.</h3>
-          <p className="mt-3 text-ivory/75 max-w-xl mx-auto">From skyline penthouses to coastal villas — explore Egypt's finest properties from your living room.</p>
-          <Link to="/explore" className="mt-7 inline-flex px-7 py-3 rounded-sm gradient-gold text-[color:var(--gold-foreground)] text-sm">Browse AR-enabled listings</Link>
+        <div className="os-container mt-10 rounded-3xl bg-navy p-8 text-primary-foreground shadow-premium">
+          <p className="section-kicker text-gold-soft">
+            {lang === "ar" ? "واجهة تجريبية" : "Demo interface"}
+          </p>
+          <h2 className="mt-3 text-4xl font-black">
+            {lang === "ar" ? "امسح. قارن. قرر." : "Scan. Compare. Decide."}
+          </h2>
+          <Button variant="gold" className="mt-6">
+            {lang === "ar" ? "ابدأ تجربة AR" : "Start AR Demo"}
+          </Button>
         </div>
       </section>
-    </>
+      <Footer />
+    </main>
   );
 }

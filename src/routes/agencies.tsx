@@ -1,36 +1,70 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
-import { MapPin, Building2 } from "lucide-react";
-import { AGENCIES } from "@/lib/demo-data";
-import { SectionHeader } from "@/components/site/SectionHeader";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Footer, PageHero, SectionHeader, agencies } from "@/components/osoulk/site";
+import { Button } from "@/components/ui/button";
+import { useLang } from "@/lib/language";
 
 export const Route = createFileRoute("/agencies")({
-  head: () => ({ meta: [
-    { title: "Agencies & Partners — OSOULK" },
-    { name: "description", content: "Browse Egypt's top real estate agencies and developer partners on OSOULK." },
-  ] }),
-  component: AgenciesPage,
+  head: () => ({
+    meta: [
+      { title: "Real Estate Agencies — Osoulk" },
+      { name: "description", content: "Partner agency directory with coverage areas, listing stats, and premium profile cards." },
+      { property: "og:title", content: "Real Estate Agencies — Osoulk" },
+    ],
+  }),
+  component: Agencies,
 });
 
-function AgenciesPage() {
+function Agencies() {
+  const { t, lang } = useLang();
+  const { location } = useRouterState();
+  const isChildRoute = location.pathname.startsWith("/agencies/") && location.pathname !== "/agencies/";
+
+  if (isChildRoute) return <Outlet />;
+
   return (
-    <div className="container-luxe py-16">
-      <SectionHeader eyebrow="Agencies" title="Egypt's most trusted partners" description="A curated directory of certified agencies and developers we work with daily." />
-      <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {AGENCIES.map((a, i) => (
-          <motion.div key={a.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.06 }} className="rounded-xl bg-card border border-border shadow-card overflow-hidden">
-            <div className="aspect-[16/10] overflow-hidden bg-secondary"><img src={a.logo} alt={a.name} className="h-full w-full object-cover" loading="lazy" /></div>
-            <div className="p-6">
-              <h3 className="font-display text-xl">{a.name}</h3>
-              <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{a.coverage}</p>
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-sm flex items-center gap-1.5"><Building2 className="h-4 w-4 text-[color:var(--gold)]" /> <strong>{a.listings}</strong> listings</span>
-                <Link to="/explore" className="text-sm luxe-link">View profile</Link>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
+    <main>
+      <PageHero
+        kicker={t("agencies.kicker")}
+        title={t("agencies.title")}
+        subtitle={t("agencies.subtitle")}
+      />
+
+      <section className="py-16">
+        <div className="os-container">
+          <SectionHeader
+            kicker={t("agencies.dirKicker")}
+            title={t("agencies.dirTitle")}
+          />
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {agencies.map((a) => {
+              const name = lang === "ar" ? a.nameAr : a.name;
+              const area = lang === "ar" ? a.areaAr : a.area;
+              return (
+                <article key={a.name} className="premium-card p-6 text-center transition-shadow hover:shadow-premium">
+                  <img
+                    src={a.logo}
+                    alt={name}
+                    className="mx-auto h-36 w-36 rounded-2xl object-cover"
+                    loading="lazy"
+                  />
+                  <h2 className="mt-5 text-xl font-black text-navy">{name}</h2>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {t("agencies.coverage")}: {area}
+                  </p>
+                  <p className="mt-2 font-black text-navy">
+                    {t("agencies.properties")}: {a.listings}
+                  </p>
+                  <Button variant="outline" className="mt-5 w-full" asChild>
+                    <Link to="/agencies/$id" params={{ id: a.id }}>{t("agencies.viewProfile")}</Link>
+                  </Button>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+    </main>
   );
 }

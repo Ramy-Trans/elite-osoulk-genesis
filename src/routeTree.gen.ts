@@ -10,28 +10,60 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SellRouteImport } from './routes/sell'
+import { Route as SavedSearchesRouteImport } from './routes/saved-searches'
+import { Route as SavedRouteImport } from './routes/saved'
 import { Route as ReelsRouteImport } from './routes/reels'
+import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as PagesRouteImport } from './routes/pages'
 import { Route as PackagesRouteImport } from './routes/packages'
 import { Route as FaqsRouteImport } from './routes/faqs'
 import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as EstimatorRouteImport } from './routes/estimator'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CreateListingRouteImport } from './routes/create-listing'
 import { Route as ContactRouteImport } from './routes/contact'
-import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CompareRouteImport } from './routes/compare'
 import { Route as ArticlesRouteImport } from './routes/articles'
 import { Route as ArRouteImport } from './routes/ar'
 import { Route as AgenciesRouteImport } from './routes/agencies'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PropertiesIdRouteImport } from './routes/properties.$id'
+import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
+import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
+import { Route as MarketingKitIdRouteImport } from './routes/marketing-kit.$id'
+import { Route as ArticlesIdRouteImport } from './routes/articles.$id'
+import { Route as AgenciesIdRouteImport } from './routes/agencies.$id'
 
 const SellRoute = SellRouteImport.update({
   id: '/sell',
   path: '/sell',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SavedSearchesRoute = SavedSearchesRouteImport.update({
+  id: '/saved-searches',
+  path: '/saved-searches',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SavedRoute = SavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReelsRoute = ReelsRouteImport.update({
   id: '/reels',
   path: '/reels',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagesRoute = PagesRouteImport.update({
+  id: '/pages',
+  path: '/pages',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PackagesRoute = PackagesRouteImport.update({
@@ -49,6 +81,16 @@ const ExploreRoute = ExploreRouteImport.update({
   path: '/explore',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EstimatorRoute = EstimatorRouteImport.update({
+  id: '/estimator',
+  path: '/estimator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CreateListingRoute = CreateListingRouteImport.update({
   id: '/create-listing',
   path: '/create-listing',
@@ -59,9 +101,9 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const CompareRoute = CompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ArticlesRoute = ArticlesRouteImport.update({
@@ -94,55 +136,121 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PropertiesIdRoute = PropertiesIdRouteImport.update({
+  id: '/properties/$id',
+  path: '/properties/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsIdRoute = ProjectsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ProjectsRoute,
+} as any)
+const PagesSlugRoute = PagesSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => PagesRoute,
+} as any)
+const MarketingKitIdRoute = MarketingKitIdRouteImport.update({
+  id: '/marketing-kit/$id',
+  path: '/marketing-kit/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArticlesIdRoute = ArticlesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ArticlesRoute,
+} as any)
+const AgenciesIdRoute = AgenciesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AgenciesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/agencies': typeof AgenciesRoute
+  '/agencies': typeof AgenciesRouteWithChildren
   '/ar': typeof ArRoute
-  '/articles': typeof ArticlesRoute
-  '/auth': typeof AuthRoute
+  '/articles': typeof ArticlesRouteWithChildren
+  '/compare': typeof CompareRoute
   '/contact': typeof ContactRoute
   '/create-listing': typeof CreateListingRoute
+  '/dashboard': typeof DashboardRoute
+  '/estimator': typeof EstimatorRoute
   '/explore': typeof ExploreRoute
   '/faqs': typeof FaqsRoute
   '/packages': typeof PackagesRoute
+  '/pages': typeof PagesRouteWithChildren
+  '/projects': typeof ProjectsRouteWithChildren
   '/reels': typeof ReelsRoute
+  '/saved': typeof SavedRoute
+  '/saved-searches': typeof SavedSearchesRoute
   '/sell': typeof SellRoute
+  '/agencies/$id': typeof AgenciesIdRoute
+  '/articles/$id': typeof ArticlesIdRoute
+  '/marketing-kit/$id': typeof MarketingKitIdRoute
+  '/pages/$slug': typeof PagesSlugRoute
+  '/projects/$id': typeof ProjectsIdRoute
+  '/properties/$id': typeof PropertiesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/agencies': typeof AgenciesRoute
+  '/agencies': typeof AgenciesRouteWithChildren
   '/ar': typeof ArRoute
-  '/articles': typeof ArticlesRoute
-  '/auth': typeof AuthRoute
+  '/articles': typeof ArticlesRouteWithChildren
+  '/compare': typeof CompareRoute
   '/contact': typeof ContactRoute
   '/create-listing': typeof CreateListingRoute
+  '/dashboard': typeof DashboardRoute
+  '/estimator': typeof EstimatorRoute
   '/explore': typeof ExploreRoute
   '/faqs': typeof FaqsRoute
   '/packages': typeof PackagesRoute
+  '/pages': typeof PagesRouteWithChildren
+  '/projects': typeof ProjectsRouteWithChildren
   '/reels': typeof ReelsRoute
+  '/saved': typeof SavedRoute
+  '/saved-searches': typeof SavedSearchesRoute
   '/sell': typeof SellRoute
+  '/agencies/$id': typeof AgenciesIdRoute
+  '/articles/$id': typeof ArticlesIdRoute
+  '/marketing-kit/$id': typeof MarketingKitIdRoute
+  '/pages/$slug': typeof PagesSlugRoute
+  '/projects/$id': typeof ProjectsIdRoute
+  '/properties/$id': typeof PropertiesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/agencies': typeof AgenciesRoute
+  '/agencies': typeof AgenciesRouteWithChildren
   '/ar': typeof ArRoute
-  '/articles': typeof ArticlesRoute
-  '/auth': typeof AuthRoute
+  '/articles': typeof ArticlesRouteWithChildren
+  '/compare': typeof CompareRoute
   '/contact': typeof ContactRoute
   '/create-listing': typeof CreateListingRoute
+  '/dashboard': typeof DashboardRoute
+  '/estimator': typeof EstimatorRoute
   '/explore': typeof ExploreRoute
   '/faqs': typeof FaqsRoute
   '/packages': typeof PackagesRoute
+  '/pages': typeof PagesRouteWithChildren
+  '/projects': typeof ProjectsRouteWithChildren
   '/reels': typeof ReelsRoute
+  '/saved': typeof SavedRoute
+  '/saved-searches': typeof SavedSearchesRoute
   '/sell': typeof SellRoute
+  '/agencies/$id': typeof AgenciesIdRoute
+  '/articles/$id': typeof ArticlesIdRoute
+  '/marketing-kit/$id': typeof MarketingKitIdRoute
+  '/pages/$slug': typeof PagesSlugRoute
+  '/projects/$id': typeof ProjectsIdRoute
+  '/properties/$id': typeof PropertiesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -153,14 +261,26 @@ export interface FileRouteTypes {
     | '/agencies'
     | '/ar'
     | '/articles'
-    | '/auth'
+    | '/compare'
     | '/contact'
     | '/create-listing'
+    | '/dashboard'
+    | '/estimator'
     | '/explore'
     | '/faqs'
     | '/packages'
+    | '/pages'
+    | '/projects'
     | '/reels'
+    | '/saved'
+    | '/saved-searches'
     | '/sell'
+    | '/agencies/$id'
+    | '/articles/$id'
+    | '/marketing-kit/$id'
+    | '/pages/$slug'
+    | '/projects/$id'
+    | '/properties/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -169,14 +289,26 @@ export interface FileRouteTypes {
     | '/agencies'
     | '/ar'
     | '/articles'
-    | '/auth'
+    | '/compare'
     | '/contact'
     | '/create-listing'
+    | '/dashboard'
+    | '/estimator'
     | '/explore'
     | '/faqs'
     | '/packages'
+    | '/pages'
+    | '/projects'
     | '/reels'
+    | '/saved'
+    | '/saved-searches'
     | '/sell'
+    | '/agencies/$id'
+    | '/articles/$id'
+    | '/marketing-kit/$id'
+    | '/pages/$slug'
+    | '/projects/$id'
+    | '/properties/$id'
   id:
     | '__root__'
     | '/'
@@ -185,31 +317,51 @@ export interface FileRouteTypes {
     | '/agencies'
     | '/ar'
     | '/articles'
-    | '/auth'
+    | '/compare'
     | '/contact'
     | '/create-listing'
+    | '/dashboard'
+    | '/estimator'
     | '/explore'
     | '/faqs'
     | '/packages'
+    | '/pages'
+    | '/projects'
     | '/reels'
+    | '/saved'
+    | '/saved-searches'
     | '/sell'
+    | '/agencies/$id'
+    | '/articles/$id'
+    | '/marketing-kit/$id'
+    | '/pages/$slug'
+    | '/projects/$id'
+    | '/properties/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
-  AgenciesRoute: typeof AgenciesRoute
+  AgenciesRoute: typeof AgenciesRouteWithChildren
   ArRoute: typeof ArRoute
-  ArticlesRoute: typeof ArticlesRoute
-  AuthRoute: typeof AuthRoute
+  ArticlesRoute: typeof ArticlesRouteWithChildren
+  CompareRoute: typeof CompareRoute
   ContactRoute: typeof ContactRoute
   CreateListingRoute: typeof CreateListingRoute
+  DashboardRoute: typeof DashboardRoute
+  EstimatorRoute: typeof EstimatorRoute
   ExploreRoute: typeof ExploreRoute
   FaqsRoute: typeof FaqsRoute
   PackagesRoute: typeof PackagesRoute
+  PagesRoute: typeof PagesRouteWithChildren
+  ProjectsRoute: typeof ProjectsRouteWithChildren
   ReelsRoute: typeof ReelsRoute
+  SavedRoute: typeof SavedRoute
+  SavedSearchesRoute: typeof SavedSearchesRoute
   SellRoute: typeof SellRoute
+  MarketingKitIdRoute: typeof MarketingKitIdRoute
+  PropertiesIdRoute: typeof PropertiesIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -221,11 +373,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SellRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/saved-searches': {
+      id: '/saved-searches'
+      path: '/saved-searches'
+      fullPath: '/saved-searches'
+      preLoaderRoute: typeof SavedSearchesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/saved': {
+      id: '/saved'
+      path: '/saved'
+      fullPath: '/saved'
+      preLoaderRoute: typeof SavedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reels': {
       id: '/reels'
       path: '/reels'
       fullPath: '/reels'
       preLoaderRoute: typeof ReelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pages': {
+      id: '/pages'
+      path: '/pages'
+      fullPath: '/pages'
+      preLoaderRoute: typeof PagesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/packages': {
@@ -249,6 +429,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExploreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/estimator': {
+      id: '/estimator'
+      path: '/estimator'
+      fullPath: '/estimator'
+      preLoaderRoute: typeof EstimatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/create-listing': {
       id: '/create-listing'
       path: '/create-listing'
@@ -263,11 +457,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/compare': {
+      id: '/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof CompareRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/articles': {
@@ -312,25 +506,130 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/properties/$id': {
+      id: '/properties/$id'
+      path: '/properties/$id'
+      fullPath: '/properties/$id'
+      preLoaderRoute: typeof PropertiesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/$id': {
+      id: '/projects/$id'
+      path: '/$id'
+      fullPath: '/projects/$id'
+      preLoaderRoute: typeof ProjectsIdRouteImport
+      parentRoute: typeof ProjectsRoute
+    }
+    '/pages/$slug': {
+      id: '/pages/$slug'
+      path: '/$slug'
+      fullPath: '/pages/$slug'
+      preLoaderRoute: typeof PagesSlugRouteImport
+      parentRoute: typeof PagesRoute
+    }
+    '/marketing-kit/$id': {
+      id: '/marketing-kit/$id'
+      path: '/marketing-kit/$id'
+      fullPath: '/marketing-kit/$id'
+      preLoaderRoute: typeof MarketingKitIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/articles/$id': {
+      id: '/articles/$id'
+      path: '/$id'
+      fullPath: '/articles/$id'
+      preLoaderRoute: typeof ArticlesIdRouteImport
+      parentRoute: typeof ArticlesRoute
+    }
+    '/agencies/$id': {
+      id: '/agencies/$id'
+      path: '/$id'
+      fullPath: '/agencies/$id'
+      preLoaderRoute: typeof AgenciesIdRouteImport
+      parentRoute: typeof AgenciesRoute
+    }
   }
 }
+
+interface AgenciesRouteChildren {
+  AgenciesIdRoute: typeof AgenciesIdRoute
+}
+
+const AgenciesRouteChildren: AgenciesRouteChildren = {
+  AgenciesIdRoute: AgenciesIdRoute,
+}
+
+const AgenciesRouteWithChildren = AgenciesRoute._addFileChildren(
+  AgenciesRouteChildren,
+)
+
+interface ArticlesRouteChildren {
+  ArticlesIdRoute: typeof ArticlesIdRoute
+}
+
+const ArticlesRouteChildren: ArticlesRouteChildren = {
+  ArticlesIdRoute: ArticlesIdRoute,
+}
+
+const ArticlesRouteWithChildren = ArticlesRoute._addFileChildren(
+  ArticlesRouteChildren,
+)
+
+interface PagesRouteChildren {
+  PagesSlugRoute: typeof PagesSlugRoute
+}
+
+const PagesRouteChildren: PagesRouteChildren = {
+  PagesSlugRoute: PagesSlugRoute,
+}
+
+const PagesRouteWithChildren = PagesRoute._addFileChildren(PagesRouteChildren)
+
+interface ProjectsRouteChildren {
+  ProjectsIdRoute: typeof ProjectsIdRoute
+}
+
+const ProjectsRouteChildren: ProjectsRouteChildren = {
+  ProjectsIdRoute: ProjectsIdRoute,
+}
+
+const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
+  ProjectsRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
-  AgenciesRoute: AgenciesRoute,
+  AgenciesRoute: AgenciesRouteWithChildren,
   ArRoute: ArRoute,
-  ArticlesRoute: ArticlesRoute,
-  AuthRoute: AuthRoute,
+  ArticlesRoute: ArticlesRouteWithChildren,
+  CompareRoute: CompareRoute,
   ContactRoute: ContactRoute,
   CreateListingRoute: CreateListingRoute,
+  DashboardRoute: DashboardRoute,
+  EstimatorRoute: EstimatorRoute,
   ExploreRoute: ExploreRoute,
   FaqsRoute: FaqsRoute,
   PackagesRoute: PackagesRoute,
+  PagesRoute: PagesRouteWithChildren,
+  ProjectsRoute: ProjectsRouteWithChildren,
   ReelsRoute: ReelsRoute,
+  SavedRoute: SavedRoute,
+  SavedSearchesRoute: SavedSearchesRoute,
   SellRoute: SellRoute,
+  MarketingKitIdRoute: MarketingKitIdRoute,
+  PropertiesIdRoute: PropertiesIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
