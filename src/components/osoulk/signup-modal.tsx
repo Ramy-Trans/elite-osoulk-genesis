@@ -19,7 +19,8 @@ declare global {
   }
 }
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+const GOOGLE_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)
+  || "19856102489-ajcgo0guof71q231fig5lk8dm4vfk7mv.apps.googleusercontent.com";
 
 type Mode = "signup" | "signin" | "forgot" | "reset";
 
