@@ -1331,42 +1331,18 @@ app.get("/robots.txt", (_req, res) => {
   res.send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /dashboard\n\nSitemap: ${base}/sitemap.xml\n`);
 });
 
-// ─── Production: serve built TanStack Start frontend ─────────────────────────
+// ─── Production: serve built SPA frontend ────────────────────────────────────
 if (!IS_SERVERLESS) {
-  const DIST_CLIENT      = join(__dirname, "..", "dist", "client");
-  const DIST_SERVER_ENTRY = join(__dirname, "..", "dist", "server", "index.js");
+  const DIST_CLIENT = join(__dirname, "..", "dist", "client");
 
-  if (existsSync(DIST_CLIENT) && existsSync(DIST_SERVER_ENTRY)) {
-    app.use("/assets", express.static(join(DIST_CLIENT,"assets"), { immutable:true, maxAge:"1y" }));
+  if (existsSync(DIST_CLIENT)) {
+    app.use("/assets", express.static(join(DIST_CLIENT, "assets"), { immutable: true, maxAge: "1y" }));
     app.use(express.static(DIST_CLIENT, { index: false }));
-    const serverEntry = await import(DIST_SERVER_ENTRY);
-    const fetchHandler = serverEntry.default?.fetch || serverEntry.default;
-    app.use(async (req, res) => {
-      try {
-        if (req.path.startsWith("/api/")) return res.status(404).json({ message: "Not found" });
-        const protocol = req.headers["x-forwarded-proto"] || req.protocol || "http";
-        const host     = req.headers["x-forwarded-host"] || req.headers.host || "localhost";
-        const url      = `${protocol}://${host}${req.originalUrl}`;
-        const headers  = new Headers();
-        for (const [k, v] of Object.entries(req.headers)) {
-          if (Array.isArray(v)) v.forEach(val => headers.append(k, val));
-          else if (v !== undefined) headers.set(k, String(v));
-        }
-        const init = { method: req.method, headers };
-        if (!["GET","HEAD"].includes(req.method)) {
-          init.body = req.body && Object.keys(req.body).length ? JSON.stringify(req.body) : undefined;
-          if (init.body && !headers.has("content-type")) headers.set("content-type","application/json");
-        }
-        const webRes = await fetchHandler(new Request(url, init), {}, {});
-        res.status(webRes.status);
-        webRes.headers.forEach((value, key) => res.setHeader(key, value));
-        res.end(Buffer.from(await webRes.arrayBuffer()));
-      } catch (err) {
-        console.error("[ssr] fetch handler error:", err);
-        res.status(500).send("Internal server error");
-      }
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api/")) return next();
+      res.sendFile(join(DIST_CLIENT, "index.html"));
     });
-    console.log("[server] serving production frontend from dist/");
+    console.log("[server] serving production SPA from dist/client/");
   }
 
   // Test MySQL connection on startup if configured

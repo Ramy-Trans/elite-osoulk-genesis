@@ -1,10 +1,10 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute } from "@tanstack/react-router";
 import { Globe, Home, Search, Heart, PlusSquare, Menu, X, Phone, LayoutDashboard, ChevronDown, Building, Video, Scale, Bell, Newspaper, MapPin, Star, TrendingUp, FileText } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { getCachedUser, getSiteSettings, applyThemeToDOM, type CurrentUser } from "@/lib/api";
 import { NotificationBell } from "@/components/osoulk/notification-bell";
 
-import appCss from "../styles.css?url";
+import "../styles.css";
 import osoulkLogo from "@/assets/osoulk-logo.webp";
 import { Button } from "@/components/ui/button";
 import { SubscribeModal } from "@/components/osoulk/subscribe-modal";
@@ -28,51 +28,6 @@ function NotFoundComponent() {
 }
 
 export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "أصولك — عقارات فاخرة في مصر" },
-      { name: "description", content: "منصة عقارية فاخرة لاكتشاف العقارات والوكالات والمجمعات في مصر." },
-      { name: "author", content: "Osoulk" },
-      { name: "theme-color", content: "#0a1628" },
-      { name: "mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "أصولك" },
-      { property: "og:title", content: "أصولك — عقارات فاخرة في مصر" },
-      { property: "og:description", content: "منصة عقارية فاخرة لاكتشاف العقارات والوكالات والمجمعات في مصر." },
-      { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "أصولك" },
-      { property: "og:locale", content: "ar_EG" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "أصولك — عقارات فاخرة في مصر" },
-      { name: "twitter:description", content: "منصة عقارية فاخرة لاكتشاف العقارات والوكالات والمجمعات في مصر." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/3jwHQjL8qbVKmNRdBjBTcNzMq7U2/social-images/social-1777147718540-download.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/3jwHQjL8qbVKmNRdBjBTcNzMq7U2/social-images/social-1777147718540-download.webp" },
-      { name: "application/ld+json", content: JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "RealEstateAgent",
-        "name": "أصولك",
-        "alternateName": "Osoulk",
-        "description": "منصة عقارية فاخرة لاكتشاف العقارات والوكالات في مصر",
-        "url": "https://osoulk.com",
-        "telephone": "+201025812666",
-        "address": { "@type": "PostalAddress", "addressCountry": "EG", "addressLocality": "القاهرة" },
-        "areaServed": "Egypt",
-        "sameAs": ["https://osoulk.com"],
-      }) },
-    ],
-    links: [
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700;900&display=swap" },
-      { rel: "preconnect", href: "https://images.unsplash.com" },
-      { rel: "stylesheet", href: appCss },
-      { rel: "manifest", href: "/manifest.json" },
-    ],
-  }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponentWrapper,
 });
@@ -82,15 +37,6 @@ function NotFoundComponentWrapper() {
     <LangProvider>
       <NotFoundComponent />
     </LangProvider>
-  );
-}
-
-function RootShell({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning>
-      <head suppressHydrationWarning><HeadContent /></head>
-      <body>{children}<Scripts /></body>
-    </html>
   );
 }
 
