@@ -1359,10 +1359,16 @@ if (!IS_SERVERLESS) {
   // Test MySQL connection on startup if configured — wrapped so a failed
   // connection never kills the process
   if (process.env.DB_HOST) {
-    try {
-      await testConnection();
-    } catch (err) {
-      console.error("[server] DB connection check failed (non-fatal):", err.message);
+    const dbResult = await testConnection(3, 2000).catch(err => {
+      console.error("[server] DB connection check threw (non-fatal):", err.message);
+      return { ok: false };
+    });
+    if (!dbResult.ok) {
+      console.error(
+        `[server] Could not reach MySQL at ${dbResult.host}:${dbResult.port}/${dbResult.database}. ` +
+        "Running in degraded mode — API will return errors for DB-backed routes. " +
+        "If DB_HOST=localhost, update it to your actual remote MySQL hostname."
+      );
     }
   }
 
