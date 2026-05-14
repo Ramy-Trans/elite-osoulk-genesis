@@ -1,0 +1,14 @@
+{
+    "name": "ramy-trans/osoulk",
+    "description": "Osoulk Egypt Premium Real Estate Platform",
+    "type": "project",
+    "license": "proprietary",
+    "require": {},
+    "scripts": {
+        "post-install-cmd": [],
+        "post-update-cmd": []
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}
