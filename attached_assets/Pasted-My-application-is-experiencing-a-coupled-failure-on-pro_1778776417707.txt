@@ -1,0 +1,19 @@
+My application is experiencing a coupled failure on production. The API endpoints (/api/pages, /api/site-settings, /api/admin/login) are returning 503 Service Unavailable errors, and my service worker (sw.js) is crashing with: "TypeError: Failed to execute 'clone' on 'Response': Response body is already used".
+
+Please perform an absolute fix on both files across the following steps and push the update to GitHub:
+
+1. FIX THE BACKEND DATABASE CONFIGURATION:
+   - Locate where the MySQL connection pool is initialized (e.g., `server/config/database.js` or `server/database/index.js`).
+   - The 503 indicates that the Node server is likely throwing an unhandled exception and crashing during the remote database handshake with Hostinger. 
+   - Wrap the connection/pool initialization in a resilient error handler or try/catch block. If the initial connection fails, log the error using `console.error` but DO NOT let the entire Node.js process terminate (`process.exit(1)`). The server must stay alive to serve basic routes even if the remote DB drops temporarily.
+   - Double check that the pool configuration properly reads `process.env.DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, and `DB_PORT`.
+
+2. FIX THE SERVICE WORKER (`sw.js` around line 26):
+   - Locate the fetch event listener in `sw.js` (or your service worker source file).
+   - The crash happens because the code is attempting to call `response.clone()` after the response body stream has already been read, or because it's trying to cache an invalid/503 error response.
+   - Refactor the caching logic to ensure `.clone()` is called *immediately* when the response is received, BEFORE `.json()` or `.text()` reads it.
+   - Add a guard clause to ensure it only attempts to clone and cache successful responses (e.g., `if (!response || response.status !== 200 || response.type !== 'basic') return response;`).
+
+3. BUILD AND DEPLOY PREPARATION:
+   - Once these safety layers are added to the backend and the service worker, compile the project to ensure no syntax breakages.
+   - Automatically commit the fixes and push them directly to the main branch of my GitHub repository so the hosting platform can execute a clean auto-deployment.

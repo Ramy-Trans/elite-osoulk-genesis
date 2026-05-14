@@ -1356,25 +1356,28 @@ if (!IS_SERVERLESS) {
     console.log("[server] dist/client not found — running in API-only mode");
   }
 
-  // Test MySQL connection on startup if configured — wrapped so a failed
-  // connection never kills the process
-  if (process.env.DB_HOST) {
-    const dbResult = await testConnection(3, 2000).catch(err => {
-      console.error("[server] DB connection check threw (non-fatal):", err.message);
-      return { ok: false };
-    });
-    if (!dbResult.ok) {
-      console.error(
-        `[server] Could not reach MySQL at ${dbResult.host}:${dbResult.port}/${dbResult.database}. ` +
-        "Running in degraded mode — API will return errors for DB-backed routes. " +
-        "If DB_HOST=localhost, update it to your actual remote MySQL hostname."
-      );
-    }
-  }
-
+  // Bind the port FIRST so the platform health-check passes immediately.
+  // DB connection is tested in the background — a slow/failed handshake with
+  // a remote host (e.g. Hostinger) previously caused 503s because the server
+  // wasn't listening yet when the load-balancer probed it.
   const PORT = process.env.PORT || 3001;
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Osoulk API running on http://0.0.0.0:${PORT} [mode: ${db.isMysql ? "MySQL" : "JSON files"}]`);
+
+    // Test MySQL in the background — never block startup
+    if (process.env.DB_HOST) {
+      testConnection(3, 2000).then(dbResult => {
+        if (!dbResult.ok) {
+          console.error(
+            `[server] Could not reach MySQL at ${dbResult.host}:${dbResult.port}/${dbResult.database}. ` +
+            "Running in degraded mode — API will return errors for DB-backed routes. " +
+            "If DB_HOST=localhost, update it to your actual remote MySQL hostname."
+          );
+        }
+      }).catch(err => {
+        console.error("[server] DB connection check threw (non-fatal):", err.message);
+      });
+    }
   });
 }
 

@@ -23,7 +23,14 @@ self.addEventListener("fetch", e => {
   e.respondWith(
     caches.match(request).then(cached => {
       const net = fetch(request).then(res => {
-        if (res.ok) caches.open(CACHE).then(c => c.put(request, res.clone()));
+        // Guard: only cache valid same-origin successful responses.
+        // Do NOT cache opaque, redirect, or error responses (e.g. 503s).
+        if (!res || res.status !== 200 || res.type !== "basic") return res;
+
+        // Clone IMMEDIATELY — before returning res to the browser.
+        // Calling clone() after res is consumed causes "body already used" crash.
+        const toCache = res.clone();
+        caches.open(CACHE).then(c => c.put(request, toCache));
         return res;
       }).catch(() => cached);
       return cached || net;
