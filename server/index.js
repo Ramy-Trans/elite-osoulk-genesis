@@ -8,7 +8,7 @@ import { dirname, join } from "path";
 import { createHash } from "crypto";
 import os from "os";
 
-import db, { setDataDir } from "./database/adapter.js";
+import db, { setDataDir, setDbAvailable } from "./database/adapter.js";
 import { testConnection, getPool } from "./config/db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -1413,14 +1413,18 @@ if (!IS_SERVERLESS) {
     // Test MySQL in the background — never block startup
     if (process.env.DB_HOST) {
       testConnection(3, 2000).then(dbResult => {
+        setDbAvailable(dbResult.ok);
         if (!dbResult.ok) {
           console.error(
             `[server] Could not reach MySQL at ${dbResult.host}:${dbResult.port}/${dbResult.database}. ` +
-            "Running in degraded mode — API will return errors for DB-backed routes. " +
-            "If DB_HOST=localhost, update it to your actual remote MySQL hostname."
+            "Falling back to JSON files — site remains fully functional. " +
+            "Fix: set DB_HOST to your actual Hostinger MySQL hostname (not 'localhost')."
           );
+        } else {
+          console.log(`[db] Live — adapter switched to MySQL mode.`);
         }
       }).catch(err => {
+        setDbAvailable(false);
         console.error("[server] DB connection check threw (non-fatal):", err.message);
       });
     }

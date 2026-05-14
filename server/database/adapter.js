@@ -1,8 +1,11 @@
 /**
  * Dual-mode database adapter.
  *
- * When DB_HOST env var is set  → uses MySQL (Hostinger production)
+ * When DB_HOST env var is set  → tries MySQL (Hostinger production)
  * When DB_HOST is NOT set      → uses JSON files (Replit / local dev)
+ *
+ * If DB_HOST is set but MySQL is unreachable, `setDbAvailable(false)`
+ * switches the adapter to JSON-file fallback so the site keeps running.
  *
  * All methods are async so callers are identical in both modes.
  */
@@ -11,7 +14,24 @@ import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 import { getPool } from "../config/db.js";
 
-const USE_MYSQL = !!(process.env.DB_HOST);
+const WANTS_MYSQL = !!(process.env.DB_HOST);
+
+// Runtime flag — flipped to false by server/index.js when testConnection fails
+let dbAvailable = WANTS_MYSQL;
+
+/** Call with false after a failed testConnection() to enable JSON fallback */
+export function setDbAvailable(val) {
+  dbAvailable = !!val;
+  if (!val && WANTS_MYSQL) {
+    console.warn(
+      "[adapter] MySQL unavailable — falling back to JSON files. " +
+      "Set DB_HOST to your real Hostinger hostname to use MySQL."
+    );
+  }
+}
+
+/** True only when we actually have a live MySQL connection */
+function useMysql() { return WANTS_MYSQL && dbAvailable; }
 
 // ─── File/table mapping ───────────────────────────────────────────────────────
 // Each entry: { file: "filename.json", table: "mysql_table", type: "array"|"object" }
@@ -154,14 +174,14 @@ async function sqlIncrementView(propertyId) {
 
 // ─── Public adapter API ───────────────────────────────────────────────────────
 const db = {
-  /** Returns true when running in MySQL mode */
-  isMysql: USE_MYSQL,
+  /** True when running in MySQL mode AND the connection is live */
+  get isMysql() { return useMysql(); },
 
   /** Get all records from an array collection */
   async getAll(collection) {
     const m = MAP[collection];
     if (!m) throw new Error(`Unknown collection: ${collection}`);
-    if (!USE_MYSQL) return readArr(m.file);
+    if (!useMysql()) return readArr(m.file);
     if (m.type === "object" || m.type === "views") throw new Error(`Use getObj() for '${collection}'`);
     return sqlGetAll(m.table);
   },
@@ -170,7 +190,7 @@ const db = {
   async getObj(collection) {
     const m = MAP[collection];
     if (!m) throw new Error(`Unknown collection: ${collection}`);
-    if (!USE_MYSQL) {
+    if (!useMysql()) {
       if (m.type === "array") return {};
       return readObj(m.file);
     }
@@ -182,7 +202,7 @@ const db = {
   async replaceAll(collection, arr) {
     const m = MAP[collection];
     if (!m) throw new Error(`Unknown collection: ${collection}`);
-    if (!USE_MYSQL) { writeFile(m.file, arr); return; }
+    if (!useMysql()) { writeFile(m.file, arr); return; }
     await sqlReplaceAll(m.table, arr);
   },
 
@@ -190,7 +210,7 @@ const db = {
   async setObj(collection, data) {
     const m = MAP[collection];
     if (!m) throw new Error(`Unknown collection: ${collection}`);
-    if (!USE_MYSQL) { writeFile(m.file, data); return; }
+    if (!useMysql()) { writeFile(m.file, data); return; }
     if (m.type === "views") { await sqlSetViews(data); return; }
     await sqlSetKv(collection, data);
   },
@@ -199,7 +219,7 @@ const db = {
   async insert(collection, record) {
     const m = MAP[collection];
     if (!m) throw new Error(`Unknown collection: ${collection}`);
-    if (!USE_MYSQL) {
+    if (!useMysql()) {
       const arr = readArr(m.file);
       arr.push(record);
       writeFile(m.file, arr);
@@ -212,7 +232,7 @@ const db = {
   async updateOne(collection, id, updates) {
     const m = MAP[collection];
     if (!m) throw new Error(`Unknown collection: ${collection}`);
-    if (!USE_MYSQL) {
+    if (!useMysql()) {
       const arr = readArr(m.file);
       const item = arr.find(x => x.id === id);
       if (!item) return null;
@@ -227,7 +247,7 @@ const db = {
   async deleteOne(collection, id) {
     const m = MAP[collection];
     if (!m) throw new Error(`Unknown collection: ${collection}`);
-    if (!USE_MYSQL) {
+    if (!useMysql()) {
       const arr = readArr(m.file).filter(x => x.id !== id);
       writeFile(m.file, arr);
       return;
@@ -237,7 +257,7 @@ const db = {
 
   /** Increment a property view count (optimized) */
   async incrementView(propertyId) {
-    if (!USE_MYSQL) {
+    if (!useMysql()) {
       const views = readObj("views.json");
       views[propertyId] = (views[propertyId] || 0) + 1;
       writeFile("views.json", views);
@@ -248,7 +268,7 @@ const db = {
 
   /** Raw MySQL query — only works in MySQL mode */
   async query(sql, params = []) {
-    if (!USE_MYSQL) throw new Error("Raw query only available in MySQL mode");
+    if (!useMysql()) throw new Error("Raw query only available in MySQL mode");
     const [rows] = await getPool().query(sql, params);
     return rows;
   },
