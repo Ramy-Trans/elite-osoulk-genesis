@@ -67,6 +67,7 @@ export async function getStats() {
     subscribers: number; users: number; listings: number;
     reels: number; agencies: number; pendingApprovals: number;
     approvedReels: number; totalViews: number;
+    newUsers: number; pendingListings: number;
   }>;
 }
 

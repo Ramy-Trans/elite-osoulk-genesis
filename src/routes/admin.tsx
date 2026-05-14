@@ -56,6 +56,7 @@ type Stats = {
   subscribers: number; users: number; listings: number; reels: number;
   agencies: number; pendingApprovals: number; approvedReels: number; totalViews: number;
   growth?: number | null; articles?: number; projects?: number;
+  newUsers?: number; pendingListings?: number;
 };
 
 type SidebarItem = {
@@ -5744,6 +5745,12 @@ function AdminRoot() {
     if (adminKey) loadStats();
   }, [adminKey, loadStats]);
 
+  useEffect(() => {
+    if (!adminKey) return;
+    const id = setInterval(loadStats, 30_000);
+    return () => clearInterval(id);
+  }, [adminKey, loadStats]);
+
   function handleLogin() {
     setAdminKeyState(getAdminKey());
   }
@@ -5789,6 +5796,16 @@ function AdminRoot() {
             const isOpen = expandedGroups.has(group.id);
             const GroupIcon = group.icon;
             const hasActive = group.items.some(item => item.id === activeTab);
+
+            function getBadgeCount(id: string): number {
+              if (!stats) return 0;
+              if (id === "reels")    return stats.pendingApprovals ?? 0;
+              if (id === "crm")      return stats.newUsers ?? 0;
+              if (id === "listings") return stats.pendingListings ?? 0;
+              return 0;
+            }
+            const groupTotalBadge = group.items.reduce((sum, item) => sum + getBadgeCount(item.id), 0);
+
             return (
               <div key={group.id} className="mb-1">
                 <button
@@ -5800,13 +5817,20 @@ function AdminRoot() {
                   className={`flex w-full items-center gap-2.5 mx-1 rounded-xl px-3 py-2 text-[11px] font-black uppercase tracking-widest transition-colors ${hasActive ? "text-navy" : "text-muted-foreground hover:text-navy"}`}
                 >
                   <GroupIcon className="h-3.5 w-3.5 shrink-0" />
-                          <span className="flex-1 text-left">{t("admin.group." + group.id)}</span>
+                  <span className="flex-1 text-left">{t("admin.group." + group.id)}</span>
+                  {!isOpen && groupTotalBadge > 0 && (
+                    <span className="h-2 w-2 rounded-full bg-red-500 shrink-0" />
+                  )}
                   {isOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                 </button>
                 {isOpen && (
                   <div className="space-y-0.5 px-2 pb-1">
-                    {group.items.map(({ id, label, icon: Icon }) => {
-                      const isPending = id === "reels" && (stats?.pendingApprovals ?? 0) > 0;
+                    {group.items.map(({ id, icon: Icon }) => {
+                      const badgeCount = getBadgeCount(id);
+                      const badgeColor =
+                        id === "reels"    ? "bg-amber-500" :
+                        id === "crm"      ? "bg-emerald-500" :
+                        id === "listings" ? "bg-blue-500" : "bg-amber-500";
                       return (
                         <button
                           key={id}
@@ -5815,9 +5839,9 @@ function AdminRoot() {
                         >
                           <Icon className="h-4 w-4 shrink-0" />
                           <span className="flex-1 text-left">{t("admin.nav." + id)}</span>
-                          {isPending && (
-                            <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-black text-white">
-                              {stats!.pendingApprovals}
+                          {badgeCount > 0 && (
+                            <span className={`rounded-full ${badgeColor} px-2 py-0.5 text-xs font-black text-white`}>
+                              {badgeCount}
                             </span>
                           )}
                         </button>

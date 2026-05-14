@@ -247,6 +247,7 @@ app.get("/api/stats", async (_req, res) => {
     let growth = null;
     if (lastMonthActivity > 0) growth = Math.round(((thisMonthActivity - lastMonthActivity) / lastMonthActivity) * 100);
     else if (thisMonthActivity > 0) growth = 100;
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     res.json({
       subscribers: subs.length, users: users.length,
       listings: STATIC_LISTINGS + approvedUserListings,
@@ -256,6 +257,8 @@ app.get("/api/stats", async (_req, res) => {
       totalViews, growth,
       articles: articles.filter(a => a.status === "published").length,
       projects: projects.filter(p => p.publishStatus === "published").length,
+      newUsers: users.filter(u => u.createdAt && u.createdAt >= yesterday).length,
+      pendingListings: userListings.filter(l => l.approvalStatus === "pending").length,
     });
   } catch { res.status(500).json({ message: "Server error" }); }
 });
