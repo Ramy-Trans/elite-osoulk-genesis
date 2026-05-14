@@ -4,14 +4,34 @@ require_once __DIR__ . '/config.php';
 function getPdo(): PDO {
     static $pdo = null;
     if ($pdo === null) {
-        $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;
+        $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET . ';connect_timeout=10';
         $pdo = new PDO($dsn, DB_USER, DB_PASSWORD, [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
+            PDO::ATTR_TIMEOUT            => 10,
         ]);
     }
     return $pdo;
+}
+
+function testDbConnection(): array {
+    try {
+        $pdo = getPdo();
+        $pdo->query('SELECT 1');
+        return ['ok' => true, 'host' => DB_HOST, 'db' => DB_NAME, 'user' => DB_USER];
+    } catch (PDOException $e) {
+        return [
+            'ok'    => false,
+            'host'  => DB_HOST,
+            'db'    => DB_NAME,
+            'user'  => DB_USER,
+            'error' => $e->getMessage(),
+            'hint'  => DB_HOST === 'localhost' || DB_HOST === '127.0.0.1'
+                ? 'Using localhost — correct for Hostinger PHP (same server). Check DB_USER and DB_PASSWORD.'
+                : 'Using remote host. If this is a Hostinger PHP app, try DB_HOST=localhost instead.',
+        ];
+    }
 }
 
 function getAllRows(string $table): array {

@@ -26,6 +26,12 @@ if ($method === 'GET' && $path === 'health') {
     jsonResponse(['ok' => true, 'mode' => 'mysql', 'timestamp' => nowIso()]);
 }
 
+// GET /db-test — diagnostic endpoint (public, safe — no data exposed)
+if ($method === 'GET' && $path === 'db-test') {
+    $result = testDbConnection();
+    jsonResponse($result, $result['ok'] ? 200 : 503);
+}
+
 // POST /admin/login
 if ($method === 'POST' && $path === 'admin/login') {
     $b = getBody();
