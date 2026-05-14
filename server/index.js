@@ -1331,6 +1331,14 @@ app.get("/robots.txt", (_req, res) => {
   res.send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /dashboard\n\nSitemap: ${base}/sitemap.xml\n`);
 });
 
+// ─── Global crash guards ──────────────────────────────────────────────────────
+process.on("uncaughtException", (err) => {
+  console.error("[server] uncaughtException:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[server] unhandledRejection:", reason);
+});
+
 // ─── Production: serve built SPA frontend ────────────────────────────────────
 if (!IS_SERVERLESS) {
   const DIST_CLIENT = join(__dirname, "..", "dist", "client");
@@ -1338,18 +1346,30 @@ if (!IS_SERVERLESS) {
   if (existsSync(DIST_CLIENT)) {
     app.use("/assets", express.static(join(DIST_CLIENT, "assets"), { immutable: true, maxAge: "1y" }));
     app.use(express.static(DIST_CLIENT, { index: false }));
-    app.get("*", (req, res, next) => {
+    // Regex catch-all — works in Express 4 and 5, and matches "/" too
+    app.get(/(.*)/, (req, res, next) => {
       if (req.path.startsWith("/api/")) return next();
       res.sendFile(join(DIST_CLIENT, "index.html"));
     });
     console.log("[server] serving production SPA from dist/client/");
+  } else {
+    console.log("[server] dist/client not found — running in API-only mode");
   }
 
-  // Test MySQL connection on startup if configured
-  if (process.env.DB_HOST) await testConnection();
+  // Test MySQL connection on startup if configured — wrapped so a failed
+  // connection never kills the process
+  if (process.env.DB_HOST) {
+    try {
+      await testConnection();
+    } catch (err) {
+      console.error("[server] DB connection check failed (non-fatal):", err.message);
+    }
+  }
 
-  const PORT = parseInt(process.env.PORT || "3001", 10);
-  app.listen(PORT, "0.0.0.0", () => console.log(`Osoulk API running on http://localhost:${PORT} [mode: ${db.isMysql ? "MySQL" : "JSON files"}]`));
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Osoulk API running on http://0.0.0.0:${PORT} [mode: ${db.isMysql ? "MySQL" : "JSON files"}]`);
+  });
 }
 
 export default app;
