@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "lVaLR1zMWAfegHxs1ZYGm"
+uri = "file://osoulk-hostinger.tar.gz"
+type = "unspecified"
+title = "Osoulk — Hostinger Deployment Package (1.7 MB)"

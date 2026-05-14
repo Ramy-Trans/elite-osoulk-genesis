@@ -1,0 +1,102 @@
+I want you to convert this project into a HOSTINGER-SHARED-HOSTING COMPATIBLE FULL STACK APP using:
+
+- Frontend: Static React/Vite build
+- Backend: PHP + MySQL (NO Node.js backend)
+- Database: Hostinger MySQL
+
+The goal is a fully working deployment on Hostinger public_html.
+
+---
+
+1. FRONTEND (STATIC BUILD):
+- Detect framework (React / Vite)
+- Build production version
+- Fix routing issues:
+  - Replace BrowserRouter with HashRouter (IMPORTANT for Hostinger)
+- Ensure:
+  - index.html is in root of build output
+  - assets load correctly
+  - Vite base path set to './' if needed
+- Output a single deployable folder for public_html
+
+---
+
+2. BACKEND (CONVERT TO PHP):
+Replace any Node/Express backend with PHP API.
+
+Create a /api folder with PHP files.
+
+Use this database configuration ONLY in PHP backend:
+
+DB_HOST=localhost
+DB_USER=u109248573_osoulkapp
+DB_PASSWORD=***STORE ONLY IN PHP, NEVER FRONTEND***
+DB_NAME=u109248573_ramy
+
+---
+
+3. PHP BACKEND REQUIREMENTS:
+- Create db connection file: api/db.php
+- Create secure API endpoints using PHP:
+  Examples:
+  - api/login.php
+  - api/register.php
+  - api/getData.php
+  - api/saveData.php (if needed)
+
+- Use mysqli or PDO (prefer PDO)
+- Return JSON responses only
+- Handle errors properly
+
+---
+
+4. SECURITY RULES:
+- NEVER expose database credentials in frontend code
+- NEVER use fetch with direct DB access
+- ALL database operations must go through PHP API only
+
+---
+
+5. FRONTEND ↔ BACKEND CONNECTION:
+- Replace any Node API calls with PHP endpoints:
+  Example:
+  /api/login.php
+  /api/register.php
+- Use fetch() from frontend to PHP endpoints
+
+---
+
+6. FIX "Invariant failed" ERROR:
+- Fix React Router issues using HashRouter
+- Ensure no missing providers (Context/Redux/Query)
+- Ensure no undefined environment variables
+- Ensure production build works without runtime crashes
+
+---
+
+7. FINAL OUTPUT:
+You must provide:
+
+A) FRONTEND:
+- Clean build folder ready for Hostinger
+- index.html in root
+- assets folder included
+
+B) BACKEND:
+- /api folder with PHP files
+- db.php connection file
+- working MySQL integration
+
+C) DEPLOYMENT STEPS:
+- What goes into public_html
+- What goes into api/
+- How to connect domain + database
+
+---
+
+8. FINAL CHECK:
+- Frontend works on Hostinger directly
+- PHP APIs return valid JSON
+- Database connection works
+- No Node.js dependency remains
+- No console errors in production
