@@ -9,7 +9,7 @@ import { createHash } from "crypto";
 import os from "os";
 
 import db, { setDataDir } from "./database/adapter.js";
-import { testConnection } from "./config/db.js";
+import { testConnection, getPool } from "./config/db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -124,6 +124,52 @@ app.get("/api/health", (_req, res) => {
     },
     timestamp: new Date().toISOString(),
   });
+});
+
+// ─── DB Status (admin) ────────────────────────────────────────────────────────
+app.get("/api/db-status", requireAdmin, async (_req, res) => {
+  if (!db.isMysql) {
+    return res.json({
+      mode: "json-files",
+      connected: true,
+      host: null,
+      port: null,
+      database: null,
+      latencyMs: null,
+      message: "Running in JSON-file mode — no MySQL configured.",
+    });
+  }
+
+  const host     = process.env.DB_HOST || "(not set)";
+  const port     = process.env.DB_PORT || "3306";
+  const database = process.env.DB_NAME || "(not set)";
+  const start    = Date.now();
+
+  try {
+    const conn = await getPool().getConnection();
+    await conn.ping();
+    conn.release();
+    const latencyMs = Date.now() - start;
+    return res.json({
+      mode: "mysql",
+      connected: true,
+      host, port, database,
+      latencyMs,
+      message: `Connected to MySQL in ${latencyMs}ms.`,
+    });
+  } catch (err) {
+    return res.json({
+      mode: "mysql",
+      connected: false,
+      host, port, database,
+      latencyMs: null,
+      error: err.message,
+      hint: (host === "localhost" || host === "127.0.0.1")
+        ? "DB_HOST is 'localhost' — this only works when the app runs ON the MySQL server. " +
+          "Set DB_HOST to your actual Hostinger MySQL hostname and enable Remote MySQL in hPanel."
+        : "Check that the host is reachable, Remote MySQL is enabled on Hostinger, and credentials are correct.",
+    });
+  }
 });
 
 // ─── Admin auth ───────────────────────────────────────────────────────────────
