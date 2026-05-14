@@ -8,9 +8,13 @@ import { useLang } from "@/lib/language";
 
 export const Route = createFileRoute("/projects/$id")({
   loader: async ({ params }) => {
-    const project = await getPublicProject(params.id);
-    if (!project) throw notFound();
-    return project;
+    try {
+      const project = await getPublicProject(params.id);
+      if (!project) throw notFound();
+      return project;
+    } catch {
+      throw notFound();
+    }
   },
   head: ({ loaderData }) => {
     if (!loaderData) return {};

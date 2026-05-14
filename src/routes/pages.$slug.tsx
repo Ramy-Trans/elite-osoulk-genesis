@@ -7,9 +7,13 @@ import { useLang } from "@/lib/language";
 
 export const Route = createFileRoute("/pages/$slug")({
   loader: async ({ params }) => {
-    const page = await getPublicPage(params.slug);
-    if (!page) throw notFound();
-    return page;
+    try {
+      const page = await getPublicPage(params.slug);
+      if (!page) throw notFound();
+      return page;
+    } catch {
+      throw notFound();
+    }
   },
   head: ({ loaderData }) => {
     if (!loaderData) return {};

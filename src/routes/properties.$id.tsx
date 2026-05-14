@@ -28,46 +28,50 @@ type NormalizedProperty = {
 
 export const Route = createFileRoute("/properties/$id")({
   loader: async ({ params }): Promise<NormalizedProperty> => {
-    const staticProp = properties.find((p) => p.id === params.id);
-    if (staticProp) {
-      return {
-        ...staticProp,
-        description: staticProp.description,
-        features: staticProp.features,
-        tags: staticProp.tags,
-        isUserListing: false,
-      } as NormalizedProperty;
-    }
+    try {
+      const staticProp = properties.find((p) => p.id === params.id);
+      if (staticProp) {
+        return {
+          ...staticProp,
+          description: staticProp.description,
+          features: staticProp.features,
+          tags: staticProp.tags,
+          isUserListing: false,
+        } as NormalizedProperty;
+      }
 
-    const userListing = await getPublicListing(params.id);
-    if (userListing) {
-      const img = userListing.images?.[0] || userListing.imageUrl || PLACEHOLDER_IMAGE;
-      return {
-        id: userListing.id,
-        title: userListing.title,
-        price: userListing.price,
-        location: userListing.location,
-        type: userListing.type,
-        status: userListing.status,
-        bedrooms: userListing.bedrooms || 0,
-        bathrooms: userListing.bathrooms || 0,
-        size: userListing.size || "",
-        image: img,
-        images: userListing.images?.length ? userListing.images : [img],
-        description: userListing.description ? [userListing.description] : [],
-        features: [],
-        tags: userListing.tags || [userListing.status],
-        ownerPhone: userListing.ownerPhone || "+201025812666",
-        ownerName: userListing.ownerName,
-        isUserListing: true,
-        videoUrl: (userListing as any).videoUrl,
-        tourUrl: (userListing as any).tourUrl,
-        lat: (userListing as any).lat,
-        lng: (userListing as any).lng,
-        address: (userListing as any).address,
-        governorate: (userListing as any).governorate,
-        nearbyLandmarks: (userListing as any).nearbyLandmarks,
-      };
+      const userListing = await getPublicListing(params.id);
+      if (userListing) {
+        const img = userListing.images?.[0] || userListing.imageUrl || PLACEHOLDER_IMAGE;
+        return {
+          id: userListing.id,
+          title: userListing.title,
+          price: userListing.price,
+          location: userListing.location,
+          type: userListing.type,
+          status: userListing.status,
+          bedrooms: userListing.bedrooms || 0,
+          bathrooms: userListing.bathrooms || 0,
+          size: userListing.size || "",
+          image: img,
+          images: userListing.images?.length ? userListing.images : [img],
+          description: userListing.description ? [userListing.description] : [],
+          features: [],
+          tags: userListing.tags || [userListing.status],
+          ownerPhone: userListing.ownerPhone || "+201025812666",
+          ownerName: userListing.ownerName,
+          isUserListing: true,
+          videoUrl: (userListing as any).videoUrl,
+          tourUrl: (userListing as any).tourUrl,
+          lat: (userListing as any).lat,
+          lng: (userListing as any).lng,
+          address: (userListing as any).address,
+          governorate: (userListing as any).governorate,
+          nearbyLandmarks: (userListing as any).nearbyLandmarks,
+        };
+      }
+    } catch {
+      throw notFound();
     }
 
     throw notFound();

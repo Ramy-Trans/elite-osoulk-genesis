@@ -6,11 +6,15 @@ import { Clock, Tag, ChevronLeft, Share2, BookOpen } from "lucide-react";
 
 export const Route = createFileRoute("/articles/$id")({
   loader: async ({ params }): Promise<{ article: Article; related: Article[] }> => {
-    const article = await getArticle(params.id);
-    if (!article) throw notFound();
-    const all = await getArticles("published");
-    const related = all.filter(a => a.id !== article.id && (a.category === article.category || a.tags?.some(t => article.tags?.includes(t)))).slice(0, 3);
-    return { article, related };
+    try {
+      const article = await getArticle(params.id);
+      if (!article) throw notFound();
+      const all = await getArticles("published");
+      const related = (all ?? []).filter(a => a.id !== article.id && (a.category === article.category || a.tags?.some(t => article.tags?.includes(t)))).slice(0, 3);
+      return { article, related };
+    } catch (err) {
+      throw notFound();
+    }
   },
   head: ({ loaderData }) => {
     if (!loaderData) return {};
