@@ -5007,7 +5007,7 @@ function MediaPickerModal({ onSelect, onClose }: { onSelect: (url: string) => vo
   const [preview, setPreview] = useState<MediaItem | null>(null);
 
   useEffect(() => {
-    getAdminMedia().then(setItems).catch(() => {}).finally(() => setLoading(false));
+    getAdminMedia().then(setItems).catch((err) => { console.error("[admin media] API request failed:", err); }).finally(() => setLoading(false));
   }, []);
 
   const filtered = items.filter(item => {
@@ -5161,7 +5161,7 @@ function MediaPickerField({
         const dims = await getImageDimensions(dataUrl);
         const { url } = await uploadMediaFile(dataUrl, file.name.replace(/\.[^.]+$/, ""));
         onChange(url);
-        createMediaItem({ url, title: file.name.replace(/\.[^.]+$/, ""), category: "general", altText: "", caption: "", description: "", ...(dims.width ? dims : {}) }).catch(() => {});
+        createMediaItem({ url, title: file.name.replace(/\.[^.]+$/, ""), category: "general", altText: "", caption: "", description: "", ...(dims.width ? dims : {}) }).catch((err) => { console.error("[admin media] createMediaItem failed:", err); });
         setUploading(false);
       };
       reader.readAsDataURL(file);

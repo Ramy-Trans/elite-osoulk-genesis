@@ -170,11 +170,14 @@ function ExploreDropdown({ onNavigate }: { onNavigate?: () => void }) {
 
   useEffect(() => {
     fetch("/api/pages")
-      .then(r => r.json())
+      .then(async r => {
+        if (!r.ok) { const text = await r.text(); throw new Error(`HTTP ${r.status}: ${text}`); }
+        return r.json();
+      })
       .then((pages: { slug: string; title: string; titleAr: string; showInNav?: boolean }[]) => {
         setNavPages(pages.filter(p => p.showInNav));
       })
-      .catch(() => {});
+      .catch((err) => { console.error("[pages nav] API request failed:", err); });
   }, []);
 
   const exploreItems = [
@@ -584,7 +587,7 @@ function GA4Injector() {
       if (theme) {
         applyThemeToDOM(theme);
       }
-    }).catch(() => {});
+    }).catch((err) => { console.error("[site-settings/GA4] API request failed:", err); });
     injected.current = true;
   }, []);
   return null;
@@ -593,7 +596,7 @@ function GA4Injector() {
 function RootComponent() {
   useEffect(() => {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      navigator.serviceWorker.register("/sw.js").catch((err) => { console.error("[sw] Registration failed:", err); });
     }
   }, []);
 

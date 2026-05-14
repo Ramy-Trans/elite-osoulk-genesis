@@ -169,7 +169,7 @@ function Explore() {
   const TYPES = useMemo(() => Array.from(new Set(properties.map(p => p.type))).sort(), []);
 
   useEffect(() => {
-    getPublicListings().then(setUserListings).catch(() => {}).finally(() => setLoadingListings(false));
+    getPublicListings().then(setUserListings).catch((err) => { console.error("[explore] listings API request failed:", err); }).finally(() => setLoadingListings(false));
   }, []);
 
   const staticFiltered = useMemo(() => {

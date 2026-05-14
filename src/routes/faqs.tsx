@@ -72,7 +72,7 @@ function FAQs() {
   useEffect(() => {
     getFaqs().then(data => {
       setDynamicFaqs(data);
-    }).catch(() => {});
+    }).catch((err) => { console.error("[faqs] API request failed:", err); });
   }, []);
 
   const allFaqs: typeof staticFaqs = dynamicFaqs.length > 0

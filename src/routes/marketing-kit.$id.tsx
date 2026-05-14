@@ -34,7 +34,10 @@ function MarketingKit() {
     if (!staticProp) {
       setLoading(true);
       fetch(`/api/listings/${id}`)
-        .then(r => r.ok ? r.json() : null)
+        .then(async r => {
+          if (!r.ok) { const text = await r.text(); throw new Error(`HTTP ${r.status}: ${text}`); }
+          return r.json();
+        })
         .then(data => {
           if (data) {
             setUserProp({
@@ -45,7 +48,7 @@ function MarketingKit() {
             });
           }
         })
-        .catch(() => {})
+        .catch((err) => { console.error("[marketing-kit] API request failed:", err); })
         .finally(() => setLoading(false));
     }
   }, [id, staticProp]);
