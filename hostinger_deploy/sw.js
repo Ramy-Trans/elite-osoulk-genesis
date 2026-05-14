@@ -1,4 +1,4 @@
-const CACHE = "osoulk-v1";
+const CACHE = "osoulk-v2";
 const STATIC = ["/", "/explore", "/agencies", "/packages", "/manifest.json", "/favicon.ico"];
 
 self.addEventListener("install", e => {
