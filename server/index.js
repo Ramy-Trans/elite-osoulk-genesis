@@ -8,7 +8,7 @@ import { dirname, join } from "path";
 import { createHash } from "crypto";
 import os from "os";
 
-import db, { setDataDir, setDbAvailable } from "./database/adapter.js";
+import db, { setDataDir, setDbAvailable, startReconnectLoop } from "./database/adapter.js";
 import { testConnection, getPool } from "./config/db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -1420,11 +1420,13 @@ if (!IS_SERVERLESS) {
             "Falling back to JSON files — site remains fully functional. " +
             "Fix: set DB_HOST to your actual Hostinger MySQL hostname (not 'localhost')."
           );
+          startReconnectLoop(120_000); // retry every 2 minutes
         } else {
           console.log(`[db] Live — adapter switched to MySQL mode.`);
         }
       }).catch(err => {
         setDbAvailable(false);
+        startReconnectLoop(120_000);
         console.error("[server] DB connection check threw (non-fatal):", err.message);
       });
     }

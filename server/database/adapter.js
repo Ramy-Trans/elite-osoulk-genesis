@@ -16,18 +16,52 @@ import { getPool } from "../config/db.js";
 
 const WANTS_MYSQL = !!(process.env.DB_HOST);
 
-// Runtime flag — flipped to false by server/index.js when testConnection fails
+// Runtime flag — flipped to false when connection fails, back to true on reconnect
 let dbAvailable = WANTS_MYSQL;
+let reconnectTimer = null;
 
 /** Call with false after a failed testConnection() to enable JSON fallback */
 export function setDbAvailable(val) {
+  const prev = dbAvailable;
   dbAvailable = !!val;
-  if (!val && WANTS_MYSQL) {
+  if (!val && WANTS_MYSQL && prev !== false) {
     console.warn(
       "[adapter] MySQL unavailable — falling back to JSON files. " +
       "Set DB_HOST to your real Hostinger hostname to use MySQL."
     );
   }
+  if (val && WANTS_MYSQL && prev === false) {
+    console.log("[adapter] MySQL reconnected — adapter switched back to MySQL mode.");
+  }
+}
+
+/**
+ * Start a background retry loop that pings MySQL every `intervalMs` ms.
+ * Stops automatically once a connection is re-established.
+ * Safe to call multiple times — only one loop runs at a time.
+ */
+export function startReconnectLoop(intervalMs = 120_000) {
+  if (!WANTS_MYSQL) return;
+  if (reconnectTimer) return;
+
+  console.log(`[adapter] Will retry MySQL connection every ${intervalMs / 1000}s…`);
+
+  reconnectTimer = setInterval(async () => {
+    try {
+      const conn = await getPool().getConnection();
+      await conn.ping();
+      conn.release();
+      // Success — activate MySQL and stop retrying
+      setDbAvailable(true);
+      clearInterval(reconnectTimer);
+      reconnectTimer = null;
+    } catch {
+      // Still unreachable — keep waiting silently
+    }
+  }, intervalMs);
+
+  // Don't hold the Node process open just for this timer
+  if (reconnectTimer?.unref) reconnectTimer.unref();
 }
 
 /** True only when we actually have a live MySQL connection */
