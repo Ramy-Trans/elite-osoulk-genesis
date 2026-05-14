@@ -1,48 +1,20 @@
-Options -Indexes
-Options -MultiViews
-
-# Force index.html as the directory index (prevent PHP from grabbing /)
 DirectoryIndex index.html
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
 
-    # Explicitly serve index.html for the root
-    RewriteRule ^$ index.html [L]
-
-    # Route /api/* to api/index.php — must come before the file/dir check
+    # API requests go to PHP router
     RewriteRule ^api(/.*)?$ api/index.php [L,QSA]
 
-    # Allow direct access to real files and directories (assets, properties/)
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    # Pass through real files
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # Pass through real directories
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # Everything else → index.html (hash routing handles client-side paths)
-    RewriteRule ^ index.html [L]
-</IfModule>
-
-# Cache static assets
-<IfModule mod_expires.c>
-    ExpiresActive On
-    ExpiresByType image/webp         "access plus 1 year"
-    ExpiresByType image/jpeg         "access plus 1 year"
-    ExpiresByType image/png          "access plus 1 year"
-    ExpiresByType image/svg+xml      "access plus 1 year"
-    ExpiresByType text/css           "access plus 6 months"
-    ExpiresByType application/javascript "access plus 6 months"
-    ExpiresByType application/json   "access plus 0 seconds"
-</IfModule>
-
-# Gzip compression
-<IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json
-</IfModule>
-
-# Security headers
-<IfModule mod_headers.c>
-    Header always set X-Content-Type-Options "nosniff"
-    Header always set X-Frame-Options "SAMEORIGIN"
-    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    # Everything else → SPA entry point
+    RewriteRule ^ /index.html [L]
 </IfModule>
