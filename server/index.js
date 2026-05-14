@@ -101,41 +101,35 @@ const PLAN_LIMITS = { free: 1, basic: 3, standard: 5, broker: 10, elite: 20 };
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 app.get("/api/health", async (_req, res) => {
-  const uptimeMs  = Date.now() - START_TIME;
-  const uptimeSec = Math.floor(uptimeMs / 1000);
-  const uptimeMin = Math.floor(uptimeSec / 60);
+  const uptimeMs    = Date.now() - START_TIME;
+  const uptimeSec   = Math.floor(uptimeMs / 1000);
+  const uptimeMin   = Math.floor(uptimeSec / 60);
   const uptimeHours = Math.floor(uptimeMin / 60);
   const mem = process.memoryUsage();
 
-  // Live DB ping — only when MySQL mode is active
-  let dbPing = null;
-  if (db.isMysql) {
+  // Always attempt a real SELECT 1 — no silent fallback
+  let dbStatus = "disconnected";
+  let dbError  = null;
+  let dbLatencyMs = null;
+  try {
     const pingStart = Date.now();
-    try {
-      const conn = await getPool().getConnection();
-      await conn.ping();
-      conn.release();
-      dbPing = { ok: true, latencyMs: Date.now() - pingStart };
-      console.log(`[health] DB ping OK in ${dbPing.latencyMs}ms`);
-    } catch (err) {
-      dbPing = { ok: false, error: err.message, code: err.code };
-      console.error("[health] DB ping FAILED:", err.message, "| code:", err.code,
-        "| host:", process.env.DB_HOST || "(not set)",
-        "| db:", process.env.DB_NAME || "(not set)");
-    }
+    const conn = await getPool().getConnection();
+    await conn.query("SELECT 1");
+    conn.release();
+    dbLatencyMs = Date.now() - pingStart;
+    dbStatus = "connected";
+  } catch (err) {
+    dbError = err.message;
+    console.error("[health] DB SELECT 1 FAILED:", err.message);
   }
 
-  res.json({
-    ok: true,
-    mode: db.isMysql ? "mysql" : "json-files",
-    database: {
-      configured: !!(process.env.DB_HOST),
-      host: process.env.DB_HOST || null,
-      port: process.env.DB_PORT || "3306",
-      name: process.env.DB_NAME || null,
-      user: process.env.DB_USER || null,
-      ping: dbPing,
-    },
+  const ok = dbStatus === "connected";
+  res.status(ok ? 200 : 503).json({
+    status: ok ? "ok" : "error",
+    db: dbStatus,
+    ...(dbError && { error: dbError }),
+    ...(dbLatencyMs !== null && { dbLatencyMs }),
+    host: process.env.DB_HOST || null,
     uptime: `${uptimeHours}h ${uptimeMin % 60}m ${uptimeSec % 60}s`,
     uptimeMs,
     memory: {
@@ -146,8 +140,6 @@ app.get("/api/health", async (_req, res) => {
     system: {
       platform: os.platform(), arch: os.arch(),
       nodeVersion: process.version, cpus: os.cpus().length,
-      totalMemory: Math.round(os.totalmem() / 1024 / 1024) + " MB",
-      freeMemory:  Math.round(os.freemem()  / 1024 / 1024) + " MB",
     },
     timestamp: new Date().toISOString(),
   });

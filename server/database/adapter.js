@@ -20,14 +20,16 @@ const WANTS_MYSQL = !!(process.env.DB_HOST);
 let dbAvailable = WANTS_MYSQL;
 let reconnectTimer = null;
 
-/** Call with false after a failed testConnection() to enable JSON fallback */
+/** Call with false after a failed testConnection() — logs loudly, no silent fallback */
 export function setDbAvailable(val) {
   const prev = dbAvailable;
   dbAvailable = !!val;
   if (!val && WANTS_MYSQL && prev !== false) {
-    console.warn(
-      "[adapter] MySQL unavailable — falling back to JSON files. " +
-      "Set DB_HOST to your real Hostinger hostname to use MySQL."
+    console.error(
+      "[adapter] FATAL: MySQL is unreachable. " +
+      "DB_HOST=" + (process.env.DB_HOST || "(not set)") + " " +
+      "DB_NAME=" + (process.env.DB_NAME || "(not set)") + ". " +
+      "The server will NOT fall back to JSON files. Fix the DB connection."
     );
   }
   if (val && WANTS_MYSQL && prev === false) {
