@@ -1058,3 +1058,21 @@ export async function getServerLogs() {
   if (!res.ok) throw new Error("Failed to fetch logs");
   return res.json() as Promise<{ time: string; msg: string; level: string }[]>;
 }
+
+export interface DbStatusResult {
+  mode: "mysql" | "json-files";
+  connected: boolean;
+  host: string | null;
+  port: string | null;
+  database: string | null;
+  latencyMs: number | null;
+  message?: string;
+  error?: string;
+  hint?: string;
+}
+
+export async function getDbStatus(): Promise<DbStatusResult> {
+  const res = await fetch(`${BASE}/api/db-status`, { headers: adminHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch DB status");
+  return res.json();
+}

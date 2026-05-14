@@ -22,7 +22,7 @@ import {
   adminLogin, setAdminKey, clearAdminKey, getAdminKey,
   getSubscribers, getStats, getUsers, updateUser, deleteUser,
   getReelRequests, updateReelRequest, deleteReelRequest,
-  getSeoData, updateSeoPage, getServerHealth, getServerLogs,
+  getSeoData, updateSeoPage, getServerHealth, getServerLogs, getDbStatus, type DbStatusResult,
   getSiteSettings, updateSiteSettings, applyThemeToDOM, getSections, getAdminSections, updateSections, updateSectionContent,
   getAnalytics, adminCreateUser, adminResetPassword,
   getArticles, createArticle, updateArticle, deleteArticle,
@@ -1271,6 +1271,8 @@ function SEOTab() {
 function ServerTab() {
   const { t } = useLang();
   const [health, setHealth] = useState<any>(null);
+  const [dbStatus, setDbStatus] = useState<DbStatusResult | null>(null);
+  const [dbLoading, setDbLoading] = useState(true);
   const [logs, setLogs] = useState<{ time: string; msg: string; level: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [logsLoading, setLogsLoading] = useState(true);
@@ -1290,6 +1292,17 @@ function ServerTab() {
     }
   }
 
+  async function loadDbStatus() {
+    setDbLoading(true);
+    try {
+      setDbStatus(await getDbStatus());
+    } catch {
+      setDbStatus(null);
+    } finally {
+      setDbLoading(false);
+    }
+  }
+
   async function loadLogs() {
     setLogsLoading(true);
     try {
@@ -1303,6 +1316,7 @@ function ServerTab() {
 
   useEffect(() => {
     loadHealth();
+    loadDbStatus();
     loadLogs();
   }, []);
 
@@ -1313,7 +1327,7 @@ function ServerTab() {
           <h2 className="text-2xl font-black text-navy">{t("admin.server.title")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{t("admin.server.subtitle")}</p>
         </div>
-        <button onClick={() => { loadHealth(); loadLogs(); }} className="flex items-center gap-2 text-sm font-bold text-navy hover:underline">
+        <button onClick={() => { loadHealth(); loadDbStatus(); loadLogs(); }} className="flex items-center gap-2 text-sm font-bold text-navy hover:underline">
           <RefreshCw className="h-4 w-4" /> {t("admin.refresh")}
         </button>
       </div>
@@ -1335,6 +1349,72 @@ function ServerTab() {
         {health && (
           <div className="mt-4 text-xs text-muted-foreground">
             Last checked: {new Date(health.timestamp).toLocaleTimeString()}
+          </div>
+        )}
+      </div>
+
+      {/* Database Status */}
+      <div className="premium-card p-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Database className={`h-4 w-4 ${dbLoading ? "text-muted-foreground" : dbStatus?.connected ? "text-emerald-500" : "text-destructive"}`} />
+            <span className="font-black text-navy">Database</span>
+          </div>
+          {dbLoading && <span className="text-xs text-muted-foreground">Checking…</span>}
+          {!dbLoading && dbStatus?.connected && (
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Connected</span>
+          )}
+          {!dbLoading && dbStatus && !dbStatus.connected && (
+            <span className="rounded-full bg-destructive/10 px-3 py-1 text-xs font-bold text-destructive">Unreachable</span>
+          )}
+          {!dbLoading && !dbStatus && (
+            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">Unknown</span>
+          )}
+        </div>
+
+        {!dbLoading && dbStatus && (
+          <div className="mt-4 space-y-3">
+            {/* Mode badge */}
+            <div className="flex items-center gap-2">
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${dbStatus.mode === "mysql" ? "bg-navy/10 text-navy" : "bg-secondary text-muted-foreground"}`}>
+                {dbStatus.mode === "mysql" ? "MySQL" : "JSON files"}
+              </span>
+              {dbStatus.latencyMs !== null && (
+                <span className="flex items-center gap-1 text-xs text-emerald-600 font-bold">
+                  <Clock className="h-3 w-3" />{dbStatus.latencyMs}ms
+                </span>
+              )}
+            </div>
+
+            {/* Connection details */}
+            {dbStatus.host && (
+              <div className="grid gap-2 sm:grid-cols-3 text-xs">
+                {[
+                  ["Host", dbStatus.host],
+                  ["Port", dbStatus.port],
+                  ["Database", dbStatus.database],
+                ].map(([label, val]) => (
+                  <div key={String(label)} className="rounded-lg bg-secondary px-3 py-2">
+                    <p className="font-black uppercase tracking-wide text-muted-foreground">{label}</p>
+                    <p className="mt-0.5 font-mono font-bold text-navy truncate">{String(val ?? "—")}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Error / hint */}
+            {dbStatus.error && (
+              <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-xs text-destructive space-y-1">
+                <p className="font-bold flex items-center gap-1.5"><XCircle className="h-3.5 w-3.5 shrink-0" />{dbStatus.error}</p>
+                {dbStatus.hint && <p className="text-muted-foreground leading-relaxed">{dbStatus.hint}</p>}
+              </div>
+            )}
+
+            {dbStatus.message && dbStatus.connected && (
+              <p className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold">
+                <CheckCircle2 className="h-3.5 w-3.5" />{dbStatus.message}
+              </p>
+            )}
           </div>
         )}
       </div>
