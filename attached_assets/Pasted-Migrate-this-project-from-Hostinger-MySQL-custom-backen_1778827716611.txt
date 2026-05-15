@@ -1,0 +1,192 @@
+Migrate this project from Hostinger MySQL + custom backend APIs to Supabase.
+
+Goal:
+
+* eliminate the current failing backend/database architecture
+* remove MySQL dependency
+* remove json-files fallback mode
+* stop relying on broken /api routes for basic CMS data
+* use Supabase as the primary database + auth system
+
+---
+
+## Stack requirements
+
+Use:
+
+* Supabase
+* @supabase/supabase-js
+* PostgreSQL (Supabase managed)
+* Vite frontend
+
+Remove:
+
+* mysql/mysql2
+* old Hostinger DB logic
+* json-files mode
+* fake fallback database
+* broken MySQL connection code
+
+---
+
+## Tasks
+
+### 1. Install Supabase client
+
+Install:
+
+* @supabase/supabase-js
+
+---
+
+### 2. Create centralized Supabase client
+
+Create:
+
+* src/lib/supabase.js
+
+Using:
+
+* VITE_SUPABASE_URL
+* VITE_SUPABASE_ANON_KEY
+
+---
+
+### 3. Replace old API fetches
+
+Replace ALL frontend calls like:
+
+* fetch("/api/pages")
+* fetch("/api/site-settings")
+* fetch("/api/admin/login")
+
+with direct Supabase queries.
+
+---
+
+### 4. Pages migration
+
+Replace:
+GET /api/pages
+
+With:
+
+```js
+const { data, error } = await supabase
+  .from("pages")
+  .select("*")
+  .eq("showInNav", true);
+```
+
+Use this throughout navigation/footer/page loading.
+
+---
+
+### 5. Site settings migration
+
+Replace:
+GET /api/site-settings
+
+With direct Supabase query:
+
+```js
+const { data, error } = await supabase
+  .from("site_settings")
+  .select("*")
+  .single();
+```
+
+---
+
+### 6. Admin login migration
+
+Replace custom backend login system with Supabase Auth.
+
+Requirements:
+
+* email/password login
+* persistent sessions
+* logout support
+* protected admin routes
+
+Use:
+
+```js
+supabase.auth.signInWithPassword()
+```
+
+---
+
+### 7. Remove backend dependency
+
+If possible:
+
+* remove Express routes entirely
+* remove API server requirement
+* remove /api/* usage from frontend
+
+Goal:
+Frontend should communicate directly with Supabase.
+
+---
+
+### 8. Environment setup
+
+Create:
+.env
+
+Using:
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+
+Do NOT hardcode credentials.
+
+---
+
+### 9. Database migration support
+
+Create SQL schema or migration scripts for:
+
+* pages
+* site_settings
+* admin/auth-related tables if needed
+
+Provide instructions for importing existing MySQL data into Supabase PostgreSQL.
+
+---
+
+### 10. Error handling
+
+Add robust frontend error handling:
+
+* loading states
+* console error logs
+* fallback UI for failed queries
+
+No silent failures.
+
+---
+
+### 11. Remove obsolete code
+
+Delete:
+
+* mysql connection code
+* json-files fallback mode
+* old backend API files if unused
+* unused server startup code
+
+---
+
+### 12. Final verification
+
+Verify:
+
+* pages load correctly
+* navigation works
+* site settings load
+* admin login works
+* no more 503 errors
+* no backend server required for CMS features
+
+Then commit and push all changes.
