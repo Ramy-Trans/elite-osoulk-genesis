@@ -590,10 +590,22 @@ function GA4Injector() {
 }
 
 function RootComponent() {
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch((err) => { console.error("[sw] Registration failed:", err); });
     }
+
+    // Listen for Supabase password recovery event (fires when user clicks the reset email link)
+    import("@/lib/supabase").then(({ supabase }) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === "PASSWORD_RECOVERY") {
+          setResetModalOpen(true);
+        }
+      });
+      return () => subscription.unsubscribe();
+    });
   }, []);
 
   return (
@@ -603,6 +615,13 @@ function RootComponent() {
       <Outlet />
       <WhatsAppFAB />
       <BottomNav />
+      {resetModalOpen && (
+        <SignUpModal
+          open={resetModalOpen}
+          onClose={() => setResetModalOpen(false)}
+          initialMode="reset"
+        />
+      )}
     </LangProvider>
   );
 }

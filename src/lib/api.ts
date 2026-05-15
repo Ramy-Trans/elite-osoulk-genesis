@@ -274,7 +274,10 @@ export async function userLogin(email: string, password: string) {
 }
 
 export async function forgotPassword(email: string): Promise<{ message: string; token: string }> {
-  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  const redirectTo = typeof window !== "undefined"
+    ? `${window.location.origin}/?reset=1`
+    : "https://osoulk.app/?reset=1";
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
   if (error) throw new Error(error.message);
   return { message: "Reset link sent to your email.", token: "" };
 }
@@ -282,7 +285,7 @@ export async function forgotPassword(email: string): Promise<{ message: string; 
 export async function resetPassword(_token: string, newPassword: string): Promise<{ message: string }> {
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) throw new Error(error.message);
-  return { message: "Password updated." };
+  return { message: "Password updated successfully!" };
 }
 
 export async function getMe(): Promise<CurrentUser> {

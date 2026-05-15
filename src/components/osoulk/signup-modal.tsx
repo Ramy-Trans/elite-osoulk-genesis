@@ -151,11 +151,9 @@ export function SignUpModal({ open, onClose, initialMode = "signup" }: Props) {
     e.preventDefault();
     setStatus("loading");
     try {
-      const data = await forgotPassword(forgotEmail);
-      setGeneratedToken(data.token);
-      setStatus("idle");
-      setMessage("");
-      setMode("reset");
+      await forgotPassword(forgotEmail);
+      setStatus("success");
+      setMessage(t("forgot.emailSent") || "تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني. تفقّد صندوق الوارد وانقر على الرابط.");
     } catch (err: unknown) {
       setStatus("error");
       setMessage(err instanceof Error ? err.message : t("signup.error"));
@@ -166,7 +164,7 @@ export function SignUpModal({ open, onClose, initialMode = "signup" }: Props) {
     e.preventDefault();
     setStatus("loading");
     try {
-      const data = await resetPassword(resetToken || generatedToken, newPassword);
+      const data = await resetPassword("", newPassword);
       setMessage(data.message);
       setStatus("success");
     } catch (err: unknown) {
@@ -392,20 +390,10 @@ export function SignUpModal({ open, onClose, initialMode = "signup" }: Props) {
               </div>
             </div>
 
-            {generatedToken && (
-              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <p className="text-xs font-bold text-amber-700 mb-1">{t("reset.tokenLabel")}</p>
-                <p className="font-mono text-2xl font-black text-amber-800 tracking-widest">{generatedToken}</p>
-                <p className="text-xs text-amber-600 mt-1">{t("reset.tokenHint")}</p>
-              </div>
-            )}
-
+            <p className="mb-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5 text-xs text-amber-800">
+              أنت تعيد تعيين كلمة مرور حسابك. أدخل كلمة مرور جديدة أدناه.
+            </p>
             <form onSubmit={handleReset} className="space-y-3">
-              <input required
-                className="h-11 w-full rounded-lg border bg-background px-4 text-sm font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-navy/20 uppercase"
-                placeholder={t("reset.tokenPlaceholder")}
-                value={resetToken || generatedToken}
-                onChange={e => setResetToken(e.target.value.toUpperCase())} />
               <div className="relative">
                 <input
                   type={showNewPwd ? "text" : "password"} required minLength={6}
