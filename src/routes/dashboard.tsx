@@ -18,13 +18,13 @@ import {
   getAllListingsAdmin, setListingApproval, adminDeleteListing,
 } from "@/lib/api";
 
-const BASE_API = "";
-
 async function fetchAllViews(): Promise<Record<string, number>> {
   try {
-    const res = await fetch(`${BASE_API}/api/properties/views`);
-    if (!res.ok) return {};
-    return res.json();
+    const { supabase } = await import("@/lib/supabase");
+    const { data } = await supabase.from("property_views").select("property_id, view_count");
+    const result: Record<string, number> = {};
+    for (const row of data ?? []) result[row.property_id] = row.view_count ?? 0;
+    return result;
   } catch { return {}; }
 }
 
@@ -41,10 +41,11 @@ export const Route = createFileRoute("/dashboard")({
 // ─── Role definitions ────────────────────────────────────────────────────────
 function getRoleInfo(t: (k: string) => string): Record<Role, { label: string; color: string; icon: React.ElementType; desc: string }> {
   return {
-    individual: { label: t("dash.roleIndividual"), color: "text-aqua",  icon: User,      desc: t("dash.individual") },
-    broker:     { label: t("dash.roleBroker"),     color: "text-gold",  icon: Briefcase, desc: t("dash.brokerDesc") },
-    developer:  { label: t("dash.roleDeveloper"),  color: "text-navy",  icon: Building2, desc: t("dash.developerDesc") },
-    admin:      { label: t("dash.roleAdmin"),       color: "text-emerald-600", icon: ShieldCheck, desc: t("dash.adminDesc2") },
+    individual:   { label: t("dash.roleIndividual"), color: "text-aqua",  icon: User,      desc: t("dash.individual") },
+    broker:       { label: t("dash.roleBroker"),     color: "text-gold",  icon: Briefcase, desc: t("dash.brokerDesc") },
+    developer:    { label: t("dash.roleDeveloper"),  color: "text-navy",  icon: Building2, desc: t("dash.developerDesc") },
+    admin:        { label: t("dash.roleAdmin"),       color: "text-emerald-600", icon: ShieldCheck, desc: t("dash.adminDesc2") },
+    "data-entry": { label: "Data Entry",              color: "text-muted-foreground", icon: User, desc: "Data entry role" },
   };
 }
 

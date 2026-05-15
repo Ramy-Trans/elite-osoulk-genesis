@@ -450,16 +450,14 @@ export function PageHero({ kicker, title, subtitle, image = heroImage, children 
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
-    fetch("/api/site-settings")
-      .then(async r => {
-        if (!r.ok) { const text = await r.text(); throw new Error(`HTTP ${r.status}: ${text}`); }
-        return r.json();
-      })
-      .then((s: { heroSlides?: { image: string; title?: string; titleAr?: string; subtitle?: string; subtitleAr?: string; ctaText?: string; ctaTextAr?: string; ctaLink?: string; enabled?: boolean }[] }) => {
-        const enabled = (s.heroSlides ?? []).filter(sl => sl.enabled !== false && sl.image);
-        if (enabled.length > 0) setSlides(enabled);
-      })
-      .catch((err) => { console.error("[site-settings hero] API request failed:", err); });
+    import("@/lib/api").then(({ getSiteSettings }) => {
+      getSiteSettings()
+        .then((s) => {
+          const enabled = (s.heroSlides ?? []).filter(sl => sl.enabled !== false && sl.image);
+          if (enabled.length > 0) setSlides(enabled);
+        })
+        .catch((err) => { console.error("[site-settings hero] failed:", err); });
+    });
   }, []);
 
   useEffect(() => {
@@ -830,15 +828,11 @@ export function Footer() {
   ];
 
   useEffect(() => {
-    fetch("/api/pages")
-      .then(async r => {
-        if (!r.ok) { const text = await r.text(); throw new Error(`HTTP ${r.status}: ${text}`); }
-        return r.json();
-      })
-      .then((pages: { slug: string; title: string; titleAr: string; showInFooter?: boolean }[]) => {
-        setCmsPages(pages.filter(p => p.showInFooter));
-      })
-      .catch((err) => { console.error("[pages footer] API request failed:", err); });
+    import("@/lib/api").then(({ getPublicPages }) => {
+      getPublicPages()
+        .then((pages) => { setCmsPages(pages.filter(p => p.showInFooter)); })
+        .catch((err) => { console.error("[pages footer] failed:", err); });
+    });
   }, []);
 
   return (

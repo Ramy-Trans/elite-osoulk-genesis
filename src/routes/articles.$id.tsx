@@ -104,7 +104,7 @@ function ArticleDetail() {
                 </Link>
                 <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {article.readingTime || 1} دقيقة قراءة</span>
                 <span>{new Date(article.createdAt).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" })}</span>
-                {article.tags?.map(tag => (
+                {article.tags?.map((tag: string) => (
                   <span key={tag} className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-xs font-bold">
                     <Tag className="h-3 w-3" />{tag}
                   </span>
@@ -133,7 +133,7 @@ function ArticleDetail() {
                 <div className="mt-10 pt-6 border-t">
                   <p className="text-xs font-black uppercase tracking-wide text-muted-foreground mb-3">الكلمات المفتاحية</p>
                   <div className="flex flex-wrap gap-2">
-                    {article.tags.map(tag => (
+                    {article.tags.map((tag: string) => (
                       <span key={tag} className="rounded-full bg-navy/5 px-4 py-1.5 text-sm font-bold text-navy">{tag}</span>
                     ))}
                   </div>
@@ -147,7 +147,7 @@ function ArticleDetail() {
                 <div className="premium-card p-5">
                   <h3 className="font-black text-navy mb-4">مقالات ذات صلة</h3>
                   <div className="space-y-4">
-                    {related.map(a => {
+                    {related.map((a: import("@/lib/api").Article) => {
                       const rTitle = lang === "ar" && a.titleAr ? a.titleAr : a.title;
                       const rSummary = lang === "ar" && a.summaryAr ? a.summaryAr : a.summary;
                       return (

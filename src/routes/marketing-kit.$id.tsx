@@ -33,23 +33,21 @@ function MarketingKit() {
   useEffect(() => {
     if (!staticProp) {
       setLoading(true);
-      fetch(`/api/listings/${id}`)
-        .then(async r => {
-          if (!r.ok) { const text = await r.text(); throw new Error(`HTTP ${r.status}: ${text}`); }
-          return r.json();
-        })
-        .then(data => {
-          if (data) {
-            setUserProp({
-              id: data.id, title: data.title, price: data.price,
-              location: data.location ?? "", status: data.status ?? "For Sale",
-              image: data.imageUrl || (data.images?.[0] ?? ""),
-              ownerPhone: data.ownerPhone ?? "+201025812666",
-            });
-          }
-        })
-        .catch((err) => { console.error("[marketing-kit] API request failed:", err); })
-        .finally(() => setLoading(false));
+      import("@/lib/api").then(({ getPublicListing }) => {
+        getPublicListing(id)
+          .then(data => {
+            if (data) {
+              setUserProp({
+                id: data.id, title: data.title, price: data.price,
+                location: data.location ?? "", status: data.status ?? "For Sale",
+                image: data.imageUrl || (data.images?.[0] ?? ""),
+                ownerPhone: data.ownerPhone ?? "+201025812666",
+              });
+            }
+          })
+          .catch((err) => { console.error("[marketing-kit] failed:", err); })
+          .finally(() => setLoading(false));
+      });
     }
   }, [id, staticProp]);
 

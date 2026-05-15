@@ -169,15 +169,11 @@ function ExploreDropdown({ onNavigate }: { onNavigate?: () => void }) {
   }, []);
 
   useEffect(() => {
-    fetch("/api/pages")
-      .then(async r => {
-        if (!r.ok) { const text = await r.text(); throw new Error(`HTTP ${r.status}: ${text}`); }
-        return r.json();
-      })
-      .then((pages: { slug: string; title: string; titleAr: string; showInNav?: boolean }[]) => {
-        setNavPages(pages.filter(p => p.showInNav));
-      })
-      .catch((err) => { console.error("[pages nav] API request failed:", err); });
+    import("@/lib/api").then(({ getPublicPages }) => {
+      getPublicPages()
+        .then((pages) => { setNavPages(pages.filter(p => p.showInNav)); })
+        .catch((err) => { console.error("[pages nav] failed:", err); });
+    });
   }, []);
 
   const exploreItems = [

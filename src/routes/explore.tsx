@@ -133,8 +133,8 @@ function UserListingCard({ listing, highlighted }: { listing: PublicListing; hig
           <div className="mt-3 flex items-center justify-between">
             <p className="text-xl font-black text-navy">{listing.price}</p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {listing.bedrooms > 0 && <span>{listing.bedrooms} {t("property.beds")}</span>}
-              {listing.bathrooms > 0 && <span>{listing.bathrooms} {t("property.baths")}</span>}
+              {(listing.bedrooms ?? 0) > 0 && <span>{listing.bedrooms} {t("property.beds")}</span>}
+              {(listing.bathrooms ?? 0) > 0 && <span>{listing.bathrooms} {t("property.baths")}</span>}
               {listing.size && <span>{listing.size}</span>}
             </div>
           </div>
