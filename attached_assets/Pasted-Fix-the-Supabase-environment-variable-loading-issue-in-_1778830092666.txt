@@ -1,0 +1,124 @@
+Fix the Supabase environment variable loading issue in this Vite project.
+
+Current problem:
+Supabase responds with:
+
+{
+"message": "No API key found in request"
+}
+
+The environment variables already exist in Replit and Hostinger, but the frontend is not properly injecting them into the Vite build.
+
+---
+
+## Tasks
+
+### 1. Verify Vite env usage
+
+Find all Supabase initialization code and ensure it uses:
+
+```js id="s1"
+import.meta.env.VITE_SUPABASE_URL
+import.meta.env.VITE_SUPABASE_ANON_KEY
+```
+
+NOT:
+
+* process.env
+* undefined variables
+* hardcoded placeholders
+
+---
+
+### 2. Verify env variable names
+
+Ensure ONLY these names are used:
+
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+
+Remove references to:
+
+* SUPABASE_URL
+* SUPABASE_KEY
+* SUPABASE_ANON
+* or any inconsistent naming
+
+---
+
+### 3. Fix Supabase client setup
+
+Create or update:
+
+src/lib/supabase.js
+
+Using:
+
+```js id="s2"
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+console.log("Supabase URL:", supabaseUrl);
+console.log("Supabase Key exists:", !!supabaseKey);
+
+export const supabase = createClient(supabaseUrl, supabaseKey);
+```
+
+---
+
+### 4. Add startup diagnostics
+
+Temporarily log:
+
+* whether env vars are undefined
+* whether Supabase initializes correctly
+
+---
+
+### 5. Ensure build-time injection works
+
+Check:
+
+* vite.config.js
+* deployment/build scripts
+* npm scripts
+
+Ensure env vars are available DURING BUILD.
+
+---
+
+### 6. Rebuild the app completely
+
+Do NOT only restart dev server.
+
+Run:
+
+* npm install
+* npm run build
+
+Then redeploy.
+
+---
+
+### 7. Verify final output
+
+After rebuild:
+
+* Supabase requests should include apikey header automatically
+* no more "No API key found in request"
+
+---
+
+### 8. Test
+
+Verify:
+
+* pages load
+* site settings load
+* auth/login works
+* no 503 errors
+* no Supabase auth errors
+
+Then commit and push all fixes.
