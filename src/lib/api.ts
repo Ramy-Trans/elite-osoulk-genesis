@@ -1093,13 +1093,11 @@ export async function getArticle(id: string): Promise<Article | null> {
 }
 
 export async function createArticle(data: Partial<Article>): Promise<Article> {
-  const { data: { user } } = await supabase.auth.getUser();
   const { data: inserted, error } = await supabase.from("pages").insert({
-    title: data.title ?? "",
-    slug: data.slug ?? "",
-    body_code: data.content ?? "",
+    title:      data.title ?? "",
+    slug:       data.slug ?? "",
+    body_code:  data.content ?? "",
     visibility: data.status ?? "draft",
-    created_by: user?.id ?? null,
   }).select("id, title, slug, body_code, visibility, created_at").single();
   if (error) { console.error("[supabase] createArticle error:", error); throw new Error(error.message); }
   return rowToArticle(inserted as Record<string, unknown>);
@@ -1406,14 +1404,12 @@ export async function getAdminPages(): Promise<CmsPage[]> {
 }
 
 export async function createAdminPage(data: Partial<CmsPage>): Promise<CmsPage> {
-  const { data: { user } } = await supabase.auth.getUser();
   const visibility = data.visibility ?? data.publishStatus ?? "draft";
   const { data: inserted, error } = await supabase.from("pages").insert({
-    slug:       data.slug ?? "",
-    title:      data.title ?? "",
-    body_code:  data.bodyCode ?? data.content ?? "",
+    slug:      data.slug ?? "",
+    title:     data.title ?? "",
+    body_code: data.bodyCode ?? data.content ?? "",
     visibility,
-    created_by: user?.id ?? null,
   }).select(PAGE_COLS).single();
   if (error) { console.error("[supabase] createAdminPage error:", error); throw new Error(error.message); }
   return rowToPage(inserted as Record<string, unknown>);
