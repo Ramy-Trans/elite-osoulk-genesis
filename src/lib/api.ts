@@ -109,17 +109,17 @@ export async function getStats() {
     supabase.from("subscribers").select("*", { count: "exact", head: true }),
     supabase.from("reel_requests").select("*", { count: "exact", head: true }),
     supabase.from("reel_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("user_listings").select("*", { count: "exact", head: true }).eq("approval_status", "pending"),
+    supabase.from("listings").select("*", { count: "exact", head: true }).eq("approval_status", "pending"),
     supabase.from("users").select("*", { count: "exact", head: true }).gte("created_at", yesterday),
-    supabase.from("articles").select("*", { count: "exact", head: true }).eq("status", "published"),
-    supabase.from("public_projects").select("*", { count: "exact", head: true }).eq("publish_status", "published"),
+    supabase.from("pages").select("*", { count: "exact", head: true }).eq("visibility", "published"),
+    supabase.from("public_projects").select("*", { count: "exact", head: true }).eq("visibility", "published"),
   ]);
 
   const { data: viewsData } = await supabase.from("property_views").select("view_count");
   const totalViews = (viewsData ?? []).reduce((a, r) => a + (r.view_count ?? 0), 0);
   const STATIC_LISTINGS = 9;
   const { count: approvedUserListings } = await supabase
-    .from("user_listings").select("*", { count: "exact", head: true }).eq("approval_status", "approved");
+    .from("listings").select("*", { count: "exact", head: true }).eq("approval_status", "approved");
 
   return {
     subscribers:      subscribers ?? 0,
@@ -718,8 +718,8 @@ export async function getMyListings(): Promise<UserListing[]> {
   if (!user) return [];
   const { data: profile } = await supabase.from("users").select("id").eq("auth_id", user.id).single();
   if (!profile) return [];
-  const { data, error } = await supabase.from("user_listings").select("*").eq("owner_id", profile.id).order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
+  const { data, error } = await supabase.from("listings").select("*").eq("owner_id", profile.id).order("created_at", { ascending: false });
+  if (error) { console.error("[supabase] getMyListings error:", error); throw new Error(error.message); }
   return (data ?? []).map(rowToListing);
 }
 
@@ -733,52 +733,52 @@ export async function createListing(data: Partial<UserListing>) {
   patch.owner_name  = profile.full_name;
   patch.owner_role  = profile.role;
   patch.approval_status = "pending";
-  const { data: inserted, error } = await supabase.from("user_listings").insert(patch).select().single();
-  if (error) throw new Error(error.message);
+  const { data: inserted, error } = await supabase.from("listings").insert(patch).select().single();
+  if (error) { console.error("[supabase] createListing error:", error); throw new Error(error.message); }
   return rowToListing(inserted as Record<string, unknown>);
 }
 
 export async function updateListing(id: string, data: Partial<UserListing>) {
   const patch = { ...listingToPatch(data), updated_at: new Date().toISOString() };
-  const { data: updated, error } = await supabase.from("user_listings").update(patch).eq("id", id).select().single();
-  if (error) throw new Error(error.message);
+  const { data: updated, error } = await supabase.from("listings").update(patch).eq("id", id).select().single();
+  if (error) { console.error("[supabase] updateListing error:", error); throw new Error(error.message); }
   return rowToListing(updated as Record<string, unknown>);
 }
 
 export async function deleteListing(id: string) {
-  const { error } = await supabase.from("user_listings").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  const { error } = await supabase.from("listings").delete().eq("id", id);
+  if (error) { console.error("[supabase] deleteListing error:", error); throw new Error(error.message); }
   return { message: "Deleted" };
 }
 
 // ─── Admin listing management ─────────────────────────────────────────────────
 export async function getAdminListings(): Promise<UserListing[]> {
-  const { data, error } = await supabase.from("user_listings").select("*").order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
+  const { data, error } = await supabase.from("listings").select("*").order("created_at", { ascending: false });
+  if (error) { console.error("[supabase] getAdminListings error:", error); throw new Error(error.message); }
   return (data ?? []).map(rowToListing);
 }
 
 export async function createAdminListing(data: Partial<UserListing>): Promise<UserListing> {
-  const { data: inserted, error } = await supabase.from("user_listings").insert(listingToPatch(data)).select().single();
-  if (error) throw new Error(error.message);
+  const { data: inserted, error } = await supabase.from("listings").insert(listingToPatch(data)).select().single();
+  if (error) { console.error("[supabase] createAdminListing error:", error); throw new Error(error.message); }
   return rowToListing(inserted as Record<string, unknown>);
 }
 
 export async function updateAdminListing(id: string, data: Partial<UserListing>): Promise<UserListing> {
-  const { data: updated, error } = await supabase.from("user_listings").update({ ...listingToPatch(data), updated_at: new Date().toISOString() }).eq("id", id).select().single();
-  if (error) throw new Error(error.message);
+  const { data: updated, error } = await supabase.from("listings").update({ ...listingToPatch(data), updated_at: new Date().toISOString() }).eq("id", id).select().single();
+  if (error) { console.error("[supabase] updateAdminListing error:", error); throw new Error(error.message); }
   return rowToListing(updated as Record<string, unknown>);
 }
 
 export async function updateAdminListingApproval(id: string, status: string): Promise<UserListing> {
-  const { data, error } = await supabase.from("user_listings").update({ approval_status: status, updated_at: new Date().toISOString() }).eq("id", id).select().single();
-  if (error) throw new Error(error.message);
+  const { data, error } = await supabase.from("listings").update({ approval_status: status, updated_at: new Date().toISOString() }).eq("id", id).select().single();
+  if (error) { console.error("[supabase] updateAdminListingApproval error:", error); throw new Error(error.message); }
   return rowToListing(data as Record<string, unknown>);
 }
 
 export async function deleteAdminListing(id: string): Promise<void> {
-  const { error } = await supabase.from("user_listings").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  const { error } = await supabase.from("listings").delete().eq("id", id);
+  if (error) { console.error("[supabase] deleteAdminListing error:", error); throw new Error(error.message); }
 }
 
 export async function getAllListingsAdmin(): Promise<UserListing[]> { return getAdminListings(); }
@@ -790,16 +790,16 @@ export type PublicListing = UserListing;
 
 export async function getPublicListings(): Promise<PublicListing[]> {
   try {
-    const { data, error } = await supabase.from("user_listings").select("*").eq("approval_status", "approved").order("created_at", { ascending: false });
-    if (error) return [];
+    const { data, error } = await supabase.from("listings").select("*").eq("approval_status", "approved").order("created_at", { ascending: false });
+    if (error) { console.error("[supabase] getPublicListings error:", error); return []; }
     return (data ?? []).map(rowToListing);
   } catch { return []; }
 }
 
 export async function getPublicListing(id: string): Promise<PublicListing | null> {
   try {
-    const { data, error } = await supabase.from("user_listings").select("*").eq("id", id).single();
-    if (error) return null;
+    const { data, error } = await supabase.from("listings").select("*").eq("id", id).single();
+    if (error) { console.error("[supabase] getPublicListing error:", error); return null; }
     return rowToListing(data as Record<string, unknown>);
   } catch { return null; }
 }
@@ -873,7 +873,7 @@ export async function getAnalytics() {
   const [users, inquiries, listings, views] = await Promise.all([
     supabase.from("users").select("created_at, plan, role"),
     supabase.from("inquiries").select("crm_status, created_at"),
-    supabase.from("user_listings").select("approval_status"),
+    supabase.from("listings").select("approval_status"),
     supabase.from("property_views").select("property_id, view_count"),
   ]);
 
@@ -1031,7 +1031,7 @@ export type AlertSettings = { emailFrequency: string; inApp: boolean };
 export async function getAlertSettings(): Promise<AlertSettings> { return { emailFrequency: "instant", inApp: true }; }
 export async function updateAlertSettings(data: Partial<AlertSettings>): Promise<AlertSettings> { return { emailFrequency: "instant", inApp: true, ...data }; }
 
-// ─── Articles ─────────────────────────────────────────────────────────────────
+// ─── Articles (backed by `pages` table — articles table removed) ──────────────
 export type Article = {
   id: string; title: string; titleAr: string; slug: string;
   category: string; categoryAr: string; summary: string; summaryAr: string;
@@ -1042,75 +1042,85 @@ export type Article = {
 };
 
 function rowToArticle(r: Record<string, unknown>): Article {
+  const visibility = r.visibility as string ?? "draft";
+  const bodyCode = r.body_code as string ?? "";
   return {
-    id: r.id as string, title: r.title as string ?? "", titleAr: r.title_ar as string ?? "",
-    slug: r.slug as string ?? "", category: r.category as string ?? "",
-    categoryAr: r.category_ar as string ?? "", summary: r.summary as string ?? "",
-    summaryAr: r.summary_ar as string ?? "", content: r.content as string ?? "",
-    contentAr: r.content_ar as string ?? "", coverImage: r.cover_image as string ?? "",
-    status: (r.status as Article["status"]) ?? "draft",
-    featured: r.featured as boolean ?? false, tags: r.tags as string[] ?? [],
-    seoTitle: r.seo_title as string ?? "", seoDescription: r.seo_description as string ?? "",
-    seoKeywords: r.seo_keywords as string[] ?? [], seoImage: r.seo_image as string ?? "",
-    canonicalUrl: r.canonical_url as string ?? "", readingTime: r.reading_time as number ?? 0,
-    createdAt: r.created_at as string ?? "", updatedAt: r.updated_at as string ?? "",
+    id: r.id as string,
+    title: r.title as string ?? "",
+    titleAr: "",
+    slug: r.slug as string ?? "",
+    category: "",
+    categoryAr: "",
+    summary: "",
+    summaryAr: "",
+    content: bodyCode,
+    contentAr: "",
+    coverImage: "",
+    status: visibility === "published" ? "published" : "draft",
+    featured: false,
+    tags: [],
+    seoTitle: r.title as string ?? "",
+    seoDescription: "",
+    seoKeywords: [],
+    seoImage: "",
+    canonicalUrl: "",
+    readingTime: 3,
+    createdAt: r.created_at as string ?? "",
+    updatedAt: r.created_at as string ?? "",
   };
 }
 
 export async function getArticles(status?: string): Promise<Article[]> {
   try {
-    let q = supabase.from("articles").select("*").order("created_at", { ascending: false });
-    if (status) q = q.eq("status", status);
+    let q = supabase.from("pages").select("id, title, slug, body_code, visibility, created_at").order("created_at", { ascending: false });
+    if (status === "published") q = q.eq("visibility", "published");
     const { data, error } = await q;
-    if (error) return [];
+    if (error) { console.error("[supabase] getArticles error:", error); return []; }
     return (data ?? []).map(rowToArticle);
   } catch { return []; }
 }
 
 export async function getArticle(id: string): Promise<Article | null> {
   try {
-    const { data } = await supabase.from("articles").select("*").or(`id.eq.${id},slug.eq.${id}`).single();
-    if (!data) return null;
+    const { data, error } = await supabase
+      .from("pages")
+      .select("id, title, slug, body_code, visibility, created_at")
+      .or(`id.eq.${id},slug.eq.${id}`)
+      .single();
+    if (error || !data) { console.error("[supabase] getArticle error:", error); return null; }
     return rowToArticle(data as Record<string, unknown>);
   } catch { return null; }
 }
 
 export async function createArticle(data: Partial<Article>): Promise<Article> {
-  const { data: inserted, error } = await supabase.from("articles").insert({
-    title: data.title ?? "", title_ar: data.titleAr ?? "", slug: data.slug ?? "",
-    category: data.category ?? "", category_ar: data.categoryAr ?? "",
-    summary: data.summary ?? "", summary_ar: data.summaryAr ?? "",
-    content: data.content ?? "", content_ar: data.contentAr ?? "",
-    cover_image: data.coverImage ?? "", status: data.status ?? "draft",
-    featured: data.featured ?? false, tags: data.tags ?? [],
-    seo_title: data.seoTitle ?? "", seo_description: data.seoDescription ?? "",
-    seo_keywords: data.seoKeywords ?? [], seo_image: data.seoImage ?? "",
-    canonical_url: data.canonicalUrl ?? "", reading_time: data.readingTime ?? 0,
-  }).select().single();
-  if (error) throw new Error(error.message);
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: inserted, error } = await supabase.from("pages").insert({
+    title: data.title ?? "",
+    slug: data.slug ?? "",
+    body_code: data.content ?? "",
+    visibility: data.status ?? "draft",
+    created_by: user?.id ?? null,
+  }).select("id, title, slug, body_code, visibility, created_at").single();
+  if (error) { console.error("[supabase] createArticle error:", error); throw new Error(error.message); }
   return rowToArticle(inserted as Record<string, unknown>);
 }
 
 export async function updateArticle(id: string, data: Partial<Article>): Promise<Article> {
-  const { data: updated, error } = await supabase.from("articles").update({
-    title: data.title, title_ar: data.titleAr, slug: data.slug,
-    category: data.category, category_ar: data.categoryAr,
-    summary: data.summary, summary_ar: data.summaryAr,
-    content: data.content, content_ar: data.contentAr,
-    cover_image: data.coverImage, status: data.status,
-    featured: data.featured, tags: data.tags,
-    seo_title: data.seoTitle, seo_description: data.seoDescription,
-    seo_keywords: data.seoKeywords, seo_image: data.seoImage,
-    canonical_url: data.canonicalUrl, reading_time: data.readingTime,
-    updated_at: new Date().toISOString(),
-  }).eq("id", id).select().single();
-  if (error) throw new Error(error.message);
+  const patch: Record<string, unknown> = {};
+  if (data.title   !== undefined) patch.title      = data.title;
+  if (data.slug    !== undefined) patch.slug       = data.slug;
+  if (data.content !== undefined) patch.body_code  = data.content;
+  if (data.status  !== undefined) patch.visibility = data.status;
+  const { data: updated, error } = await supabase
+    .from("pages").update(patch).eq("id", id)
+    .select("id, title, slug, body_code, visibility, created_at").single();
+  if (error) { console.error("[supabase] updateArticle error:", error); throw new Error(error.message); }
   return rowToArticle(updated as Record<string, unknown>);
 }
 
 export async function deleteArticle(id: string): Promise<void> {
-  const { error } = await supabase.from("articles").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  const { error } = await supabase.from("pages").delete().eq("id", id);
+  if (error) { console.error("[supabase] deleteArticle error:", error); throw new Error(error.message); }
 }
 
 // ─── FAQs ─────────────────────────────────────────────────────────────────────
@@ -1243,7 +1253,7 @@ function rowToPublicProject(r: Record<string, unknown>): PublicProject {
     status: r.status as string ?? "available", deliveryDate: r.delivery_date as string ?? "",
     totalUnits: r.total_units as number ?? 0, availableUnits: r.available_units as number ?? 0,
     amenities: r.amenities as string[] ?? [], amenitiesAr: r.amenities_ar as string[] ?? [],
-    featured: r.featured as boolean ?? false, publishStatus: r.publish_status as string ?? "draft",
+    featured: r.featured as boolean ?? false, publishStatus: (r.visibility ?? r.publish_status) as string ?? "draft",
     order: r.sort_order as number ?? 0,
     brokerNotes: r.broker_notes as string ?? "", commissionNotes: r.commission_notes as string ?? "",
     seoTitle: r.seo_title as string ?? "", seoDescription: r.seo_description as string ?? "",
@@ -1254,7 +1264,8 @@ function rowToPublicProject(r: Record<string, unknown>): PublicProject {
 
 export async function getPublicProjects(): Promise<PublicProject[]> {
   try {
-    const { data } = await supabase.from("public_projects").select("*").eq("publish_status", "published").order("sort_order");
+    const { data, error } = await supabase.from("public_projects").select("*").eq("visibility", "published").order("sort_order");
+    if (error) { console.error("[supabase] getPublicProjects error:", error); return []; }
     return (data ?? []).map(rowToPublicProject);
   } catch { return []; }
 }
@@ -1286,7 +1297,7 @@ export async function createAdminProject(data: Partial<PublicProject>): Promise<
     status: data.status ?? "available", delivery_date: data.deliveryDate ?? "",
     total_units: data.totalUnits ?? 0, available_units: data.availableUnits ?? 0,
     amenities: data.amenities ?? [], amenities_ar: data.amenitiesAr ?? [],
-    featured: data.featured ?? false, publish_status: data.publishStatus ?? "draft",
+    featured: data.featured ?? false, visibility: data.publishStatus ?? "draft",
     sort_order: data.order ?? 0, broker_notes: data.brokerNotes ?? "",
     commission_notes: data.commissionNotes ?? "", seo_title: data.seoTitle ?? "",
     seo_description: data.seoDescription ?? "", seo_keywords: data.seoKeywords ?? "",
@@ -1309,7 +1320,7 @@ export async function updateAdminProject(id: string, data: Partial<PublicProject
     status: data.status, delivery_date: data.deliveryDate,
     total_units: data.totalUnits, available_units: data.availableUnits,
     amenities: data.amenities, amenities_ar: data.amenitiesAr,
-    featured: data.featured, publish_status: data.publishStatus, sort_order: data.order,
+    featured: data.featured, visibility: data.publishStatus, sort_order: data.order,
     broker_notes: data.brokerNotes, commission_notes: data.commissionNotes,
     seo_title: data.seoTitle, seo_description: data.seoDescription,
     seo_keywords: data.seoKeywords, seo_image: data.seoImage,
@@ -1325,88 +1336,105 @@ export async function deleteAdminProject(id: string): Promise<void> {
 }
 
 // ─── CMS Pages ────────────────────────────────────────────────────────────────
+// Schema: pages(id, title, slug, body_code, visibility, created_by, created_at)
 export type CmsPage = {
-  id: string; slug: string; title: string; titleAr: string;
-  heroImage: string; heroTitle: string; heroTitleAr: string;
-  content: string; contentAr: string; publishStatus: string;
-  seoTitle: string; seoDescription: string; seoKeywords: string; ogImage: string;
-  headCode?: string; bodyCode?: string;
+  id: string; slug: string; title: string; titleAr?: string;
+  heroImage?: string; heroTitle?: string; heroTitleAr?: string;
+  content?: string; contentAr?: string;
+  bodyCode: string;
+  visibility: string;
+  publishStatus: string;
+  seoTitle?: string; seoDescription?: string; seoKeywords?: string; ogImage?: string;
+  headCode?: string;
   showInNav?: boolean; showInMenu?: boolean; showInFooter?: boolean;
-  createdAt: string; updatedAt: string;
+  createdBy?: string;
+  createdAt: string; updatedAt?: string;
 };
 
 function rowToPage(r: Record<string, unknown>): CmsPage {
+  const visibility = r.visibility as string ?? "draft";
+  const bodyCode   = r.body_code as string ?? "";
   return {
-    id: r.id as string, slug: r.slug as string ?? "",
-    title: r.title as string ?? "", titleAr: r.title_ar as string ?? "",
-    heroImage: r.hero_image as string ?? "", heroTitle: r.hero_title as string ?? "",
-    heroTitleAr: r.hero_title_ar as string ?? "",
-    content: r.content as string ?? "", contentAr: r.content_ar as string ?? "",
-    publishStatus: r.publish_status as string ?? "draft",
-    seoTitle: r.seo_title as string ?? "", seoDescription: r.seo_description as string ?? "",
-    seoKeywords: r.seo_keywords as string ?? "", ogImage: r.og_image as string ?? "",
-    headCode: r.head_code as string ?? "", bodyCode: r.body_code as string ?? "",
-    showInNav: r.show_in_nav as boolean ?? false,
-    showInMenu: r.show_in_menu as boolean ?? false,
-    showInFooter: r.show_in_footer as boolean ?? false,
-    createdAt: r.created_at as string ?? "", updatedAt: r.updated_at as string ?? "",
+    id:            r.id as string,
+    slug:          r.slug as string ?? "",
+    title:         r.title as string ?? "",
+    titleAr:       "",
+    heroImage:     "",
+    heroTitle:     r.title as string ?? "",
+    heroTitleAr:   "",
+    content:       bodyCode,
+    contentAr:     "",
+    bodyCode,
+    visibility,
+    publishStatus: visibility,
+    seoTitle:      "",
+    seoDescription: "",
+    seoKeywords:   "",
+    ogImage:       "",
+    headCode:      "",
+    showInNav:     false,
+    showInMenu:    false,
+    showInFooter:  false,
+    createdBy:     r.created_by as string ?? "",
+    createdAt:     r.created_at as string ?? "",
+    updatedAt:     r.created_at as string ?? "",
   };
 }
 
+const PAGE_COLS = "id, title, slug, body_code, visibility, created_by, created_at";
+
 export async function getPublicPages(): Promise<CmsPage[]> {
   try {
-    const { data } = await supabase.from("pages").select("*").eq("publish_status", "published").order("created_at");
+    const { data, error } = await supabase.from("pages").select(PAGE_COLS).eq("visibility", "published").order("created_at");
+    if (error) { console.error("[supabase] getPublicPages error:", error); return []; }
     return (data ?? []).map(rowToPage);
   } catch { return []; }
 }
 
 export async function getPublicPage(slug: string): Promise<CmsPage | null> {
   try {
-    const { data } = await supabase.from("pages").select("*").eq("slug", slug).eq("publish_status", "published").single();
+    const { data, error } = await supabase.from("pages").select(PAGE_COLS).eq("slug", slug).eq("visibility", "published").single();
+    if (error) { console.error("[supabase] getPublicPage error:", error); return null; }
     return data ? rowToPage(data as Record<string, unknown>) : null;
   } catch { return null; }
 }
 
 export async function getAdminPages(): Promise<CmsPage[]> {
-  const { data, error } = await supabase.from("pages").select("*").order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
+  const { data, error } = await supabase.from("pages").select(PAGE_COLS).order("created_at", { ascending: false });
+  if (error) { console.error("[supabase] getAdminPages error:", error); throw new Error(error.message); }
   return (data ?? []).map(rowToPage);
 }
 
 export async function createAdminPage(data: Partial<CmsPage>): Promise<CmsPage> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const visibility = data.visibility ?? data.publishStatus ?? "draft";
   const { data: inserted, error } = await supabase.from("pages").insert({
-    slug: data.slug ?? "", title: data.title ?? "", title_ar: data.titleAr ?? "",
-    hero_image: data.heroImage ?? "", hero_title: data.heroTitle ?? "",
-    hero_title_ar: data.heroTitleAr ?? "", content: data.content ?? "",
-    content_ar: data.contentAr ?? "", publish_status: data.publishStatus ?? "draft",
-    seo_title: data.seoTitle ?? "", seo_description: data.seoDescription ?? "",
-    seo_keywords: data.seoKeywords ?? "", og_image: data.ogImage ?? "",
-    head_code: data.headCode ?? "", body_code: data.bodyCode ?? "",
-    show_in_nav: data.showInNav ?? false, show_in_menu: data.showInMenu ?? false,
-    show_in_footer: data.showInFooter ?? false,
-  }).select().single();
-  if (error) throw new Error(error.message);
+    slug:       data.slug ?? "",
+    title:      data.title ?? "",
+    body_code:  data.bodyCode ?? data.content ?? "",
+    visibility,
+    created_by: user?.id ?? null,
+  }).select(PAGE_COLS).single();
+  if (error) { console.error("[supabase] createAdminPage error:", error); throw new Error(error.message); }
   return rowToPage(inserted as Record<string, unknown>);
 }
 
 export async function updateAdminPage(id: string, data: Partial<CmsPage>): Promise<CmsPage> {
-  const { data: updated, error } = await supabase.from("pages").update({
-    slug: data.slug, title: data.title, title_ar: data.titleAr,
-    hero_image: data.heroImage, hero_title: data.heroTitle, hero_title_ar: data.heroTitleAr,
-    content: data.content, content_ar: data.contentAr, publish_status: data.publishStatus,
-    seo_title: data.seoTitle, seo_description: data.seoDescription,
-    seo_keywords: data.seoKeywords, og_image: data.ogImage,
-    head_code: data.headCode, body_code: data.bodyCode,
-    show_in_nav: data.showInNav, show_in_menu: data.showInMenu, show_in_footer: data.showInFooter,
-    updated_at: new Date().toISOString(),
-  }).eq("id", id).select().single();
-  if (error) throw new Error(error.message);
+  const patch: Record<string, unknown> = {};
+  if (data.slug      !== undefined) patch.slug       = data.slug;
+  if (data.title     !== undefined) patch.title      = data.title;
+  if (data.bodyCode  !== undefined || data.content !== undefined)
+    patch.body_code = data.bodyCode ?? data.content;
+  if (data.visibility !== undefined || data.publishStatus !== undefined)
+    patch.visibility = data.visibility ?? data.publishStatus;
+  const { data: updated, error } = await supabase.from("pages").update(patch).eq("id", id).select(PAGE_COLS).single();
+  if (error) { console.error("[supabase] updateAdminPage error:", error); throw new Error(error.message); }
   return rowToPage(updated as Record<string, unknown>);
 }
 
 export async function deleteAdminPage(id: string): Promise<void> {
   const { error } = await supabase.from("pages").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) { console.error("[supabase] deleteAdminPage error:", error); throw new Error(error.message); }
 }
 
 // ─── HTML Snippets ────────────────────────────────────────────────────────────
