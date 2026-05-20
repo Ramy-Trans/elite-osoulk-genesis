@@ -1,0 +1,135 @@
+I want you to fully fix the SEO, structure, indexing, and technical issues of this real estate platform for production deployment.
+
+Fix ALL issues listed below professionally and implement them directly in the codebase.
+
+====================================
+CRITICAL FIXES
+==============
+
+1. REMOVE SERVICE WORKER CACHE ISSUES
+
+* Delete old sw.js if causing stale cache
+* Clear all old cache registrations
+* Ensure schema/API changes are reflected immediately
+* Create clean production build after fixes
+
+====================================
+2. FIX DATABASE / SCHEMA ERRORS
+===============================
+
+Current error:
+"Could not find the 'address' column of 'listings' in the schema cache"
+
+Do the following:
+
+* Check listings table schema
+* Add missing `address` column if needed
+  OR
+* Remove invalid frontend references if column should not exist
+* Refresh schema cache
+* Ensure no stale API typing exists
+* Ensure frontend and backend schemas match
+
+====================================
+3. SEO FIXES
+============
+
+Implement ALL of the following:
+
+A) H1 + Headings
+
+* Add exactly ONE meaningful H1 per page
+* Add proper H2/H3 hierarchy
+* Ensure headings match page content
+
+B) Meta + Titles
+
+* Improve page titles to match actual content
+* Add dynamic meta descriptions
+* Ensure Arabic SEO optimization
+
+C) Content
+
+* Add at least 250+ words meaningful content to important pages
+* Add real paragraphs
+* Ensure page title keywords appear in content
+
+D) Internal Linking
+
+* Add proper internal navigation links
+* Add footer navigation
+* Improve crawlability
+
+E) Canonical + Redirects
+
+* Add canonical URLs
+* Force redirect:
+
+  * non-www → www
+    OR
+  * www → non-www
+* Ensure no duplicate indexing
+
+F) Language + HTML
+
+* Ensure:
+
+<html lang="ar" dir="rtl">
+
+* Add proper UTF-8 charset in headers
+* Ensure viewport meta exists
+
+G) Social SEO
+Add:
+
+* OpenGraph tags
+* Twitter cards
+* Social sharing metadata
+
+H) Mobile SEO
+
+* Add Apple touch icon
+* Ensure mobile optimization passes
+
+====================================
+4. PERFORMANCE + ARCHITECTURE
+=============================
+
+* Optimize frontend bundle
+* Remove dead code
+* Lazy load heavy sections
+* Optimize images
+* Prevent excessive memory usage
+* Ensure frontend never crashes due to missing API fields
+
+====================================
+5. ROUTING FIXES
+================
+
+* Fix React Router issues on Hostinger
+* Use HashRouter if needed
+* Ensure refresh works on all pages
+
+====================================
+6. FINAL DEPLOYMENT REQUIREMENTS
+================================
+
+* Build clean production-ready version
+* Ensure:
+
+  * no console errors
+  * no runtime crashes
+  * no missing schema errors
+  * SEO audit passes significantly higher
+  * pages are crawlable and indexable
+
+====================================
+7. OUTPUT
+=========
+
+Provide:
+
+* final production build folder
+* deployment instructions for Hostinger
+* list of all fixed SEO issues
+* list of all fixed runtime/database issues
