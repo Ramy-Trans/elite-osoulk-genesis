@@ -46,6 +46,17 @@ const START_TIME = Date.now();
 const ROLES = ["individual", "broker", "developer", "admin", "data-entry"];
 function normalizeRole(r) { return ROLES.includes(r) ? r : "individual"; }
 function hashPwd(pwd) { return createHash("sha256").update(pwd).digest("hex"); }
+function deepMerge(target = {}, source = {}) {
+  const out = { ...target };
+  for (const k in source) {
+    if (source[k] && typeof source[k] === "object" && !Array.isArray(source[k])) {
+      out[k] = deepMerge(out[k], source[k]);
+    } else {
+      out[k] = source[k];
+    }
+  }
+  return out;
+}
 
 // ─── Admin auth middleware ────────────────────────────────────────────────────
 function requireAdmin(req, res, next) {
