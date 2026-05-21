@@ -8,8 +8,14 @@ import { dirname, join } from "path";
 import { createHash } from "crypto";
 import os from "os";
 
-import db, { setDataDir, setDbAvailable, startReconnectLoop } from "./database/adapter.js";
+import db, {
+  setDataDir,
+  setDbAvailable, startReconnectLoop,
+  setPgAvailable, startPgReconnectLoop,
+} from "./database/adapter.js";
 import { testConnection, getPool } from "./config/db.js";
+import { initPgPool, testPgConnection, getPgPool } from "./config/pg.js";
+import { ensurePgSchema } from "./database/schema-pg.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -111,9 +117,7 @@ app.get("/api/health", async (_req, res) => {
   let dbError  = null;
   let dbLatencyMs = null;
 
-  if (!db.isMysql) {
-    dbStatus = "json-files";
-  } else {
+  if (db.isMysql) {
     try {
       const pingStart = Date.now();
       const conn = await getPool().getConnection();
@@ -123,8 +127,22 @@ app.get("/api/health", async (_req, res) => {
       dbStatus = "connected";
     } catch (err) {
       dbError = err.message;
-      console.error("[health] DB SELECT 1 FAILED:", err.message);
+      console.error("[health] MySQL SELECT 1 FAILED:", err.message);
     }
+  } else if (db.isPg) {
+    try {
+      const pingStart = Date.now();
+      const client = await getPgPool().connect();
+      await client.query("SELECT 1");
+      client.release();
+      dbLatencyMs = Date.now() - pingStart;
+      dbStatus = "connected";
+    } catch (err) {
+      dbError = err.message;
+      console.error("[health] PostgreSQL SELECT 1 FAILED:", err.message);
+    }
+  } else {
+    dbStatus = "json-files";
   }
 
   const ok = dbStatus === "connected" || dbStatus === "json-files";
@@ -133,7 +151,7 @@ app.get("/api/health", async (_req, res) => {
     db: dbStatus,
     ...(dbError && { error: dbError }),
     ...(dbLatencyMs !== null && { dbLatencyMs }),
-    host: process.env.DB_HOST || null,
+    host: process.env.DB_HOST || process.env.SUPABASE_DATABASE_URL?.replace(/:\/\/[^@]+@/, "://**:**@") || null,
     uptime: `${uptimeHours}h ${uptimeMin % 60}m ${uptimeSec % 60}s`,
     uptimeMs,
     memory: {
@@ -1434,7 +1452,8 @@ if (!IS_SERVERLESS) {
   // wasn't listening yet when the load-balancer probed it.
   const PORT = process.env.PORT || 3001;
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Osoulk API running on http://0.0.0.0:${PORT} [mode: ${db.isMysql ? "MySQL" : "JSON files"}]`);
+    const mode = db.isMysql ? "MySQL" : db.isPg ? "PostgreSQL (initialising…)" : "JSON files";
+    console.log(`Osoulk API running on http://0.0.0.0:${PORT} [mode: ${mode}]`);
 
     // Test MySQL in the background — never block startup
     if (process.env.DB_HOST) {
@@ -1446,7 +1465,7 @@ if (!IS_SERVERLESS) {
             "Falling back to JSON files — site remains fully functional. " +
             "Fix: set DB_HOST to your actual Hostinger MySQL hostname (not 'localhost')."
           );
-          startReconnectLoop(120_000); // retry every 2 minutes
+          startReconnectLoop(120_000);
         } else {
           console.log(`[db] Live — adapter switched to MySQL mode.`);
         }
@@ -1455,6 +1474,28 @@ if (!IS_SERVERLESS) {
         startReconnectLoop(120_000);
         console.error("[server] DB connection check threw (non-fatal):", err.message);
       });
+    }
+
+    // Connect to PostgreSQL in the background — never block startup.
+    // initPgPool() tries SUPABASE_DATABASE_URL first, then DATABASE_URL (Replit).
+    // pgAvailable starts false, so JSON-files mode is used until confirmed live.
+    if (!process.env.DB_HOST && (process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL)) {
+      initPgPool()
+        .then(async (p) => {
+          if (p) {
+            setPgAvailable(true);
+            console.log("[pg] Adapter switched to PostgreSQL mode.");
+            try { await ensurePgSchema(); }
+            catch (e) { console.error("[pg] Schema init failed (non-fatal):", e.message); }
+          } else {
+            console.error("[pg] All PostgreSQL connections failed — using JSON files.");
+            startPgReconnectLoop(120_000);
+          }
+        })
+        .catch(err => {
+          console.error("[pg] Startup error (non-fatal):", err.message);
+          startPgReconnectLoop(120_000);
+        });
     }
   });
 }
