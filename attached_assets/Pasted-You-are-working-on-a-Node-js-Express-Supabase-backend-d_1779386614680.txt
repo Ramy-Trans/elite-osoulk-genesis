@@ -1,0 +1,177 @@
+You are working on a Node.js + Express + Supabase backend deployed on Hostinger.
+
+CURRENT PROBLEM
+/api/stats, /api/pages, /api/site-settings used to return 503
+recent patch forced all endpoints to return 200 even when DB fails
+this hides real database problems and causes silent data loss
+Supabase connection is unstable or intermittently failing
+backend error handling was patched incorrectly (fake success responses)
+🎯 GOALS (REAL FIX, NOT MASKING)
+
+You must:
+
+✔ Keep server stable (no crashes, no 503)
+✔ BUT do NOT fake successful responses when DB fails
+✔ Fix Supabase reliability properly
+✔ Restore proper error semantics (200 = success, 500 = real failure)
+✔ Add proper DB health check endpoint
+✔ Ensure /api/stats never crashes but still reports real DB status
+✔ Fix any unhandled promise rejections
+✔ Remove “always 200 even on failure” anti-pattern
+
+🧠 STEP 1 — FIX DB LAYER (SUPABASE)
+
+Locate db.js and ensure:
+
+Every Supabase call is wrapped properly
+Add retry logic (at least 2 retries with small delay)
+Add timeout protection (5–8 seconds max per query)
+DO NOT silently return fake data unless explicitly marked fallback
+
+Add helper:
+
+async function safeSupabaseCall(fn, fallback = null) {
+  try {
+    return await fn();
+  } catch (err) {
+    console.error("[Supabase error]", err.message);
+    return { error: true, fallback };
+  }
+}
+🧠 STEP 2 — FIX /api/stats PROPERLY
+
+Rewrite /api/stats so it:
+
+✔ never crashes
+✔ returns real data if available
+✔ returns partial data if some queries fail
+✔ reports DB status honestly
+
+app.get("/api/stats", async (req, res) => {
+  try {
+    const results = await Promise.allSettled([
+      db.getUsers?.(),
+      db.getListings?.(),
+      db.getLeads?.(),
+      db.getViews?.()
+    ]);
+
+    const safe = (r, fallback = []) =>
+      r.status === "fulfilled" ? r.value : fallback;
+
+    const users = safe(results[0], []);
+    const listings = safe(results[1], []);
+    const leads = safe(results[2], []);
+    const views = safe(results[3], {});
+
+    const dbHealthy = results.every(r => r.status === "fulfilled");
+
+    return res.status(dbHealthy ? 200 : 206).json({
+      ok: dbHealthy,
+      warning: !dbHealthy ? "Partial DB failure" : null,
+      data: {
+        users,
+        listings,
+        leads,
+        views
+      }
+    });
+
+  } catch (err) {
+    console.error("[stats fatal]", err);
+    return res.status(500).json({
+      ok: false,
+      error: "stats failed completely"
+    });
+  }
+});
+🧠 STEP 3 — FIX ERROR HANDLING (REMOVE FAKE 200 PATCH)
+
+Search and REMOVE:
+
+❌ any of these patterns:
+
+res.status(200).json({ ok: false })
+
+used inside normal routes to hide failures
+
+🧠 STEP 4 — ADD REAL HEALTH SYSTEM
+
+Add:
+
+app.get("/api/health", async (req, res) => {
+  try {
+    const dbTest = await db.ping?.();
+
+    return res.status(200).json({
+      ok: true,
+      db: dbTest ? "connected" : "degraded",
+      time: Date.now()
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      db: "down"
+    });
+  }
+});
+🧠 STEP 5 — GLOBAL SAFETY (NO CRASHES, BUT NO LIES)
+
+Add:
+
+process.on("unhandledRejection", (err) => {
+  console.error("[unhandledRejection]", err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("[uncaughtException]", err);
+});
+
+BUT DO NOT suppress real errors inside routes.
+
+🧠 STEP 6 — RULE FOR ALL ROUTES
+
+Every API route must follow:
+
+✔ never crash server
+✔ never return fake success
+✔ return:
+
+200 = real success
+206 = partial success
+500 = real failure
+503 ONLY if server is truly down (not DB issue)
+🧠 STEP 7 — FINAL CHECK
+
+Test:
+
+/api/stats
+/api/pages
+/api/site-settings
+/api/health
+
+All must:
+
+✔ not crash
+✔ return real status
+✔ reflect DB truth
+✔ not lie with fake 200s
+
+🚀 STEP 8 — PUSH TO GITHUB
+
+Commit:
+
+git add .
+git commit -m "Fix: proper Supabase error handling, remove fake success responses, stabilize stats API"
+git push origin main
+END GOAL
+
+Your backend should now be:
+
+✔ stable
+✔ honest (no hidden failures)
+✔ resilient to Supabase drops
+✔ safe under Hostinger load
+✔ no 503 cascades
+✔ production-grade behavior

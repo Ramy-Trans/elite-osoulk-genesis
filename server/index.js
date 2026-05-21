@@ -182,10 +182,13 @@ app.get("/api/health", async (_req, res) => {
       dbStatus = "json-files";
     }
 
-    // Always 200 — let callers inspect the `db` field for degradation details.
-    // A 503 here causes load balancers to pull the pod; we never want that from a DB blip.
-    res.status(200).json({
-      status: "ok",
+    // 200 = server + DB both healthy or DB is json-files (no external dependency)
+    // 200 with status:"degraded" = server up but DB unreachable (non-fatal for load balancer)
+    // 500 = health check itself crashed (rare — signals a broken server process)
+    const httpStatus = dbStatus === "error" ? 200 : 200; // always 200 for LB; honest status in body
+    res.status(httpStatus).json({
+      status: dbStatus === "error" ? "degraded" : "ok",
+      ok: dbStatus !== "error",
       db: dbStatus,
       ...(dbError && { dbError }),
       ...(dbLatencyMs !== null && { dbLatencyMs }),
@@ -205,7 +208,7 @@ app.get("/api/health", async (_req, res) => {
     });
   } catch (err) {
     console.error("[health] unexpected error:", err);
-    res.status(200).json({ status: "ok", warning: "health check partial failure", timestamp: new Date().toISOString() });
+    res.status(500).json({ ok: false, status: "error", error: "Health check failed", timestamp: new Date().toISOString() });
   }
 });
 
@@ -277,30 +280,51 @@ app.get("/api/admin/activity-log", requireAdmin, async (_req, res) => {
 });
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
-// Each DB call is individually guarded — a single collection failure NEVER
-// causes a 503. Missing data just shows as zero in the response.
+// Uses Promise.allSettled so one failing DB call never crashes the whole route.
+// HTTP semantics:
+//   200  — all queries succeeded, data is complete
+//   206  — some queries failed, partial data returned (degraded DB)
+//   500  — the route itself threw unexpectedly
 app.get("/api/stats", async (_req, res) => {
   try {
-    const [subs, users, reelReqs, views, articles, projects, userListings] = await Promise.all([
-      safeQuery(() => db.getAll("subscribers"),   []),
-      safeQuery(() => db.getAll("users"),          []),
-      safeQuery(() => db.getAll("reel-requests"),  []),
-      safeQuery(() => db.getObj("views"),          {}),
-      safeQuery(() => db.getAll("articles"),       []),
-      safeQuery(() => db.getAll("public-projects"),[]),
-      safeQuery(() => db.getAll("user-listings"),  []),
+    const settled = await Promise.allSettled([
+      db.getAll("subscribers"),
+      db.getAll("users"),
+      db.getAll("reel-requests"),
+      db.getObj("views"),
+      db.getAll("articles"),
+      db.getAll("public-projects"),
+      db.getAll("user-listings"),
     ]);
 
-    const totalViews = Object.values(views || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+    // Helper: return fulfilled value or safe fallback (and log the failure)
+    const safe = (result, fallback, label) => {
+      if (result.status === "fulfilled") return result.value ?? fallback;
+      console.error(`[/api/stats] ${label} failed:`, result.reason?.message || result.reason);
+      return fallback;
+    };
+
+    const subs         = safe(settled[0], [], "subscribers");
+    const users        = safe(settled[1], [], "users");
+    const reelReqs     = safe(settled[2], [], "reel-requests");
+    const views        = safe(settled[3], {}, "views");
+    const articles     = safe(settled[4], [], "articles");
+    const projects     = safe(settled[5], [], "public-projects");
+    const userListings = safe(settled[6], [], "user-listings");
+
+    const allOk = settled.every(r => r.status === "fulfilled");
+    const failedCount = settled.filter(r => r.status === "rejected").length;
+
+    const totalViews = Object.values(views).reduce((a, b) => a + (Number(b) || 0), 0);
     const STATIC_LISTINGS = 9;
-    const approvedUserListings = (userListings || []).filter(l => l.approvalStatus === "approved").length;
+    const approvedUserListings = userListings.filter(l => l.approvalStatus === "approved").length;
     const now = new Date();
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-    const usersThisMonth = (users || []).filter(u => u.createdAt && u.createdAt >= thisMonthStart).length;
-    const usersLastMonth = (users || []).filter(u => u.createdAt && u.createdAt >= lastMonthStart && u.createdAt < thisMonthStart).length;
-    const subsThisMonth  = (subs || []).filter(s => s.createdAt && s.createdAt >= thisMonthStart).length;
-    const subsLastMonth  = (subs || []).filter(s => s.createdAt && s.createdAt >= lastMonthStart && s.createdAt < thisMonthStart).length;
+    const usersThisMonth = users.filter(u => u.createdAt && u.createdAt >= thisMonthStart).length;
+    const usersLastMonth = users.filter(u => u.createdAt && u.createdAt >= lastMonthStart && u.createdAt < thisMonthStart).length;
+    const subsThisMonth  = subs.filter(s => s.createdAt && s.createdAt >= thisMonthStart).length;
+    const subsLastMonth  = subs.filter(s => s.createdAt && s.createdAt >= lastMonthStart && s.createdAt < thisMonthStart).length;
     const thisMonthActivity = usersThisMonth + subsThisMonth;
     const lastMonthActivity = usersLastMonth + subsLastMonth;
     let growth = null;
@@ -308,28 +332,26 @@ app.get("/api/stats", async (_req, res) => {
     else if (thisMonthActivity > 0) growth = 100;
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    res.json({
-      subscribers: (subs || []).length,
-      users: (users || []).length,
-      listings: STATIC_LISTINGS + approvedUserListings,
-      reels: (reelReqs || []).length,
-      agencies: 4,
-      pendingApprovals: (reelReqs || []).filter(r => r.status === "pending").length,
-      approvedReels: (reelReqs || []).filter(r => r.status === "approved").length,
+    // 206 Partial Content when some DB calls failed — honest about degradation
+    res.status(allOk ? 200 : 206).json({
+      ok: allOk,
+      ...(allOk ? {} : { warning: `Partial DB failure (${failedCount}/7 queries failed)` }),
+      subscribers:     subs.length,
+      users:           users.length,
+      listings:        STATIC_LISTINGS + approvedUserListings,
+      reels:           reelReqs.length,
+      agencies:        4,
+      pendingApprovals: reelReqs.filter(r => r.status === "pending").length,
+      approvedReels:   reelReqs.filter(r => r.status === "approved").length,
       totalViews, growth,
-      articles: (articles || []).filter(a => a.status === "published").length,
-      projects: (projects || []).filter(p => p.publishStatus === "published").length,
-      newUsers: (users || []).filter(u => u.createdAt && u.createdAt >= yesterday).length,
-      pendingListings: (userListings || []).filter(l => l.approvalStatus === "pending").length,
+      articles:        articles.filter(a => a.status === "published").length,
+      projects:        projects.filter(p => p.publishStatus === "published").length,
+      newUsers:        users.filter(u => u.createdAt && u.createdAt >= yesterday).length,
+      pendingListings: userListings.filter(l => l.approvalStatus === "pending").length,
     });
   } catch (err) {
-    console.error("[/api/stats]", err);
-    // Absolute last-resort fallback — always 200, never 503
-    res.status(200).json({
-      subscribers: 0, users: 0, listings: 9, reels: 0, agencies: 4,
-      pendingApprovals: 0, approvedReels: 0, totalViews: 0, growth: null,
-      articles: 0, projects: 0, newUsers: 0, pendingListings: 0,
-    });
+    console.error("[/api/stats] fatal:", err);
+    res.status(500).json({ ok: false, error: "Stats query failed completely" });
   }
 });
 
@@ -1485,7 +1507,7 @@ app.use((err, req, res, next) => {
   console.error("[express error]", err?.message || err);
   if (res.headersSent) return;
   try {
-    res.status(200).json({ ok: false, error: "An unexpected error occurred." });
+    res.status(500).json({ ok: false, error: "An unexpected error occurred." });
   } catch { /* nothing more we can do */ }
 });
 
