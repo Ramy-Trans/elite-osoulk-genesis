@@ -1,0 +1,198 @@
+TASK: FIX PRODUCTION 503 ERRORS + STABILIZE EXPRESS + RESTORE WORKING GIT STATE + DEPLOY SAFE VERSION
+
+You are working on a Node.js + Express backend deployed to Hostinger, with Supabase database integration and GitHub version history.
+
+🔥 CURRENT ISSUE
+
+Production endpoint:
+
+GET /api/stats → 503 Service Unavailable
+
+Hostinger logs show:
+
+Request reaches server
+Server responds with 503
+Response time ~183ms (so server is alive)
+Likely route crash or DB failure
+🎯 GOALS
+
+You MUST:
+
+✔ Fix /api/stats so it NEVER returns 503 unless server is fully down
+✔ Prevent any DB crash from breaking the entire API
+✔ Ensure Supabase failures fallback safely
+✔ Remove silent crash points in Express routes
+✔ Restore last known working Git version AND merge safely
+✔ Push stable version to GitHub
+✔ Ensure Hostinger deployment becomes stable
+
+🧠 STEP 1 — FIND ROOT CAUSE OF 503
+
+Search backend for:
+
+/api/stats
+stats
+analytics
+
+Then fix ALL issues:
+
+MUST ENSURE:
+every async route uses try/catch
+NO route throws uncaught exception
+NO missing DB object access
+NO undefined .map() or .filter() on null
+🧠 STEP 2 — HARDEN /api/stats ROUTE
+
+Wrap it like this:
+
+app.get("/api/stats", async (req, res) => {
+  try {
+    if (!db) {
+      return res.status(200).json({
+        ok: true,
+        warning: "DB not ready",
+        data: {}
+      });
+    }
+
+    const stats = await db.getStats?.() || {};
+    return res.json({
+      ok: true,
+      data: stats
+    });
+
+  } catch (err) {
+    console.error("[/api/stats error]", err);
+
+    // NEVER 503 crash the app
+    return res.status(200).json({
+      ok: false,
+      error: "stats temporarily unavailable",
+      data: {}
+    });
+  }
+});
+🧠 STEP 3 — GLOBAL SAFETY PATCH (CRITICAL)
+
+Add this middleware BEFORE routes:
+
+app.use((req, res, next) => {
+  res.safeJson = (data) => {
+    try {
+      return res.json(data);
+    } catch (e) {
+      console.error("[safeJson error]", e);
+      return res.status(200).json({ ok: false });
+    }
+  };
+  next();
+});
+🧠 STEP 4 — SUPABASE SAFETY LAYER
+
+Find db layer (db.js) and ensure:
+
+✔ NO direct Supabase call without try/catch
+✔ ALWAYS fallback safely
+
+Example pattern:
+
+async function safeQuery(fn, fallback = []) {
+  try {
+    return await fn();
+  } catch (e) {
+    console.error("[DB error]", e.message);
+    return fallback;
+  }
+}
+
+Use everywhere.
+
+🧠 STEP 5 — REMOVE “HARD 503” BEHAVIOR
+
+Search entire backend for:
+
+res.status(503)
+throw new Error
+
+Replace ALL with:
+
+✔ log error
+✔ return safe response
+✔ NEVER crash request pipeline
+
+🧠 STEP 6 — RESTORE LAST WORKING GIT VERSION
+
+Run:
+
+git log --oneline
+
+Find last commit where:
+
+API worked
+/api/stats worked
+no 503s in Hostinger logs
+
+Then:
+
+git checkout <GOOD_COMMIT_HASH>
+git checkout -b recovery-stable
+
+Now:
+
+✔ test locally
+✔ confirm /api/stats works
+✔ merge new Supabase + fixes carefully:
+
+git checkout main
+git merge recovery-stable
+
+Resolve conflicts manually.
+
+🧠 STEP 7 — CLEAN DEPLOY COMMIT
+
+After fixing:
+
+git add .
+git commit -m "Fix: production 503 stability, hardened API routes, Supabase-safe fallback"
+git push origin main
+🧠 STEP 8 — VERIFY BEFORE DEPLOY
+
+Test locally:
+
+/api/stats
+/api/pages
+/api/site-settings
+
+All must return:
+✔ 200 OK
+✔ never 503
+✔ never crash
+
+🧠 STEP 9 — HOSTINGER EXPECTATION FIX
+
+Ensure:
+
+server listens BEFORE DB init
+DB init is NON-blocking
+no startup failure crashes process
+🚨 FINAL RULE
+
+NEVER allow:
+
+uncaught exceptions
+unhandled promise rejection in routes
+DB failure to break API response
+
+Everything must degrade gracefully.
+
+END
+⚠️ IMPORTANT REALITY CHECK
+
+Your issue is NOT Supabase itself.
+
+Your issue is:
+
+❌ fragile Express routes
+❌ missing error isolation
+❌ DB failure bubbling into 503
+❌ deployment mismatch history (old + new commits mixed)

@@ -46,15 +46,11 @@ const START_TIME = Date.now();
 const ROLES = ["individual", "broker", "developer", "admin", "data-entry"];
 function normalizeRole(r) { return ROLES.includes(r) ? r : "individual"; }
 function hashPwd(pwd) { return createHash("sha256").update(pwd).digest("hex"); }
-function deepMerge(target = {}, source = {}) {
-  const out = { ...target };
-  for (const k in source) {
-    if (source[k] && typeof source[k] === "object" && !Array.isArray(source[k])) {
-      out[k] = deepMerge(out[k], source[k]);
-    } else {
-      out[k] = source[k];
-    }
-  }
+function deepMerge(base, over) {
+  if (over == null) return base;
+  if (typeof base !== "object" || Array.isArray(base) || typeof over !== "object" || Array.isArray(over)) return over;
+  const out = { ...base };
+  for (const k of Object.keys(over)) out[k] = deepMerge(base[k], over[k]);
   return out;
 }
 
@@ -635,14 +631,6 @@ const DEFAULT_SETTINGS = {
   theme: { accent: "gold", primaryColor: "#061E46", secondaryColor: "#22c4b7", ctaColor: "#c9a227", navbarBg: "#ffffff", navbarText: "#061E46", footerBg: "#061E46", footerText: "#ffffff", cardBg: "#ffffff", inputBg: "#f4f5f6" },
   analytics: { gaTrackingId: "", enabled: false },
 };
-
-function deepMerge(base, over) {
-  if (over == null) return base;
-  if (typeof base !== "object" || Array.isArray(base) || typeof over !== "object" || Array.isArray(over)) return over;
-  const out = { ...base };
-  for (const k of Object.keys(over)) out[k] = deepMerge(base[k], over[k]);
-  return out;
-}
 
 app.get("/api/site-settings", async (_req, res) => {
   try {
