@@ -1,5 +1,10 @@
-// ─── Express API client — all calls go to /api/* on the same origin ───────────
-// No Supabase. Admin auth: X-Admin-Key header. User auth: X-User-Id header.
+// ─── Express API client ────────────────────────────────────────────────────────
+// In dev:  VITE_API_BASE is empty → calls /api/* → proxied by Vite to port 3001
+// On Hostinger: set VITE_API_BASE=https://your-repl.replit.app at build time
+//   → all calls become https://your-repl.replit.app/api/*
+// Admin auth: X-Admin-Key header. User auth: X-User-Id header.
+const API_BASE: string =
+  (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_BASE) || "";
 
 const ADMIN_SESSION_KEY = "osoulk_admin_session";
 const USER_OBJ_KEY      = "osoulk_user_obj";
@@ -24,7 +29,7 @@ async function apiFetch<T>(
   body?: unknown,
   headers?: Record<string, string>,
 ): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(API_BASE + path, {
     method,
     headers: headers ?? { "Content-Type": "application/json" },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
@@ -38,7 +43,7 @@ async function apiFetch<T>(
 
 // Allow 4xx/5xx — parse body regardless (e.g. health returns 503 in JSON-file mode)
 async function apiFetchRaw<T>(method: string, path: string, headers?: Record<string, string>): Promise<T> {
-  const res = await fetch(path, { method, headers });
+  const res = await fetch(API_BASE + path, { method, headers });
   return res.json() as Promise<T>;
 }
 
@@ -482,7 +487,7 @@ export async function updateInquiryFull(id: string, data: {
 
 export async function exportLeadsCsv(): Promise<Blob> {
   try {
-    const res = await fetch("/api/me/leads/export", { headers: userHeaders() });
+    const res = await fetch(API_BASE + "/api/me/leads/export", { headers: userHeaders() });
     if (!res.ok) throw new Error("Export failed");
     return res.blob();
   } catch {

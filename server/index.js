@@ -139,6 +139,12 @@ app.use((_req, res, next) => {
   next();
 });
 
+// ─── Ping — ultra-lightweight, no DB, always 200 ──────────────────────────────
+// Used by Hostinger frontend, uptime monitors, and load-balancer health checks.
+app.get("/api/ping", (_req, res) => {
+  res.status(200).json({ ok: true, status: "running", timestamp: Date.now() });
+});
+
 // ─── Health ───────────────────────────────────────────────────────────────────
 app.get("/api/health", async (_req, res) => {
   try {
