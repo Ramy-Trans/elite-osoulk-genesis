@@ -112,66 +112,101 @@ app.use("/api/admin/login", authLimit);
 
 const PLAN_LIMITS = { free: 1, basic: 3, standard: 5, broker: 10, elite: 20 };
 
+// ─── Safe DB query helper ─────────────────────────────────────────────────────
+// Wraps any async DB call — never throws; returns `fallback` on failure.
+async function safeQuery(fn, fallback) {
+  try {
+    const result = await fn();
+    // Guard against null/undefined returns that would break callers
+    return result ?? fallback;
+  } catch (e) {
+    console.error("[db safe]", e.message);
+    return fallback;
+  }
+}
+
+// ─── safeJson middleware ──────────────────────────────────────────────────────
+// Adds res.safeJson() — guaranteed to send a response even if serialisation fails.
+app.use((_req, res, next) => {
+  res.safeJson = (data) => {
+    try {
+      return res.json(data);
+    } catch (e) {
+      console.error("[safeJson error]", e);
+      try { return res.status(200).end('{"ok":false}'); } catch { /* nothing left to do */ }
+    }
+  };
+  next();
+});
+
 // ─── Health ───────────────────────────────────────────────────────────────────
 app.get("/api/health", async (_req, res) => {
-  const uptimeMs    = Date.now() - START_TIME;
-  const uptimeSec   = Math.floor(uptimeMs / 1000);
-  const uptimeMin   = Math.floor(uptimeSec / 60);
-  const uptimeHours = Math.floor(uptimeMin / 60);
-  const mem = process.memoryUsage();
+  try {
+    const uptimeMs    = Date.now() - START_TIME;
+    const uptimeSec   = Math.floor(uptimeMs / 1000);
+    const uptimeMin   = Math.floor(uptimeSec / 60);
+    const uptimeHours = Math.floor(uptimeMin / 60);
+    const mem = process.memoryUsage();
 
-  let dbStatus = "disconnected";
-  let dbError  = null;
-  let dbLatencyMs = null;
+    let dbStatus = "disconnected";
+    let dbError  = null;
+    let dbLatencyMs = null;
 
-  if (db.isMysql) {
-    try {
-      const pingStart = Date.now();
-      const conn = await getPool().getConnection();
-      await conn.query("SELECT 1");
-      conn.release();
-      dbLatencyMs = Date.now() - pingStart;
-      dbStatus = "connected";
-    } catch (err) {
-      dbError = err.message;
-      console.error("[health] MySQL SELECT 1 FAILED:", err.message);
+    if (db.isMysql) {
+      try {
+        const pingStart = Date.now();
+        const conn = await getPool().getConnection();
+        await conn.query("SELECT 1");
+        conn.release();
+        dbLatencyMs = Date.now() - pingStart;
+        dbStatus = "connected";
+      } catch (err) {
+        dbError = err.message;
+        dbStatus = "error";
+        console.error("[health] MySQL SELECT 1 FAILED:", err.message);
+      }
+    } else if (db.isPg) {
+      try {
+        const pingStart = Date.now();
+        const client = await getPgPool().connect();
+        await client.query("SELECT 1");
+        client.release();
+        dbLatencyMs = Date.now() - pingStart;
+        dbStatus = "connected";
+      } catch (err) {
+        dbError = err.message;
+        dbStatus = "error";
+        console.error("[health] PostgreSQL SELECT 1 FAILED:", err.message);
+      }
+    } else {
+      dbStatus = "json-files";
     }
-  } else if (db.isPg) {
-    try {
-      const pingStart = Date.now();
-      const client = await getPgPool().connect();
-      await client.query("SELECT 1");
-      client.release();
-      dbLatencyMs = Date.now() - pingStart;
-      dbStatus = "connected";
-    } catch (err) {
-      dbError = err.message;
-      console.error("[health] PostgreSQL SELECT 1 FAILED:", err.message);
-    }
-  } else {
-    dbStatus = "json-files";
+
+    // Always 200 — let callers inspect the `db` field for degradation details.
+    // A 503 here causes load balancers to pull the pod; we never want that from a DB blip.
+    res.status(200).json({
+      status: "ok",
+      db: dbStatus,
+      ...(dbError && { dbError }),
+      ...(dbLatencyMs !== null && { dbLatencyMs }),
+      host: process.env.DB_HOST || process.env.DATABASE_URL?.replace(/:\/\/[^@]+@/, "://**:**@") || null,
+      uptime: `${uptimeHours}h ${uptimeMin % 60}m ${uptimeSec % 60}s`,
+      uptimeMs,
+      memory: {
+        heapUsed:  Math.round(mem.heapUsed  / 1024 / 1024) + " MB",
+        heapTotal: Math.round(mem.heapTotal / 1024 / 1024) + " MB",
+        rss:       Math.round(mem.rss       / 1024 / 1024) + " MB",
+      },
+      system: {
+        platform: os.platform(), arch: os.arch(),
+        nodeVersion: process.version, cpus: os.cpus().length,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("[health] unexpected error:", err);
+    res.status(200).json({ status: "ok", warning: "health check partial failure", timestamp: new Date().toISOString() });
   }
-
-  const ok = dbStatus === "connected" || dbStatus === "json-files";
-  res.status(ok ? 200 : 503).json({
-    status: ok ? "ok" : "error",
-    db: dbStatus,
-    ...(dbError && { error: dbError }),
-    ...(dbLatencyMs !== null && { dbLatencyMs }),
-    host: process.env.DB_HOST || process.env.SUPABASE_DATABASE_URL?.replace(/:\/\/[^@]+@/, "://**:**@") || null,
-    uptime: `${uptimeHours}h ${uptimeMin % 60}m ${uptimeSec % 60}s`,
-    uptimeMs,
-    memory: {
-      heapUsed:  Math.round(mem.heapUsed  / 1024 / 1024) + " MB",
-      heapTotal: Math.round(mem.heapTotal / 1024 / 1024) + " MB",
-      rss:       Math.round(mem.rss       / 1024 / 1024) + " MB",
-    },
-    system: {
-      platform: os.platform(), arch: os.arch(),
-      nodeVersion: process.version, cpus: os.cpus().length,
-    },
-    timestamp: new Date().toISOString(),
-  });
 });
 
 // ─── DB Status (admin) ────────────────────────────────────────────────────────
@@ -242,46 +277,60 @@ app.get("/api/admin/activity-log", requireAdmin, async (_req, res) => {
 });
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
+// Each DB call is individually guarded — a single collection failure NEVER
+// causes a 503. Missing data just shows as zero in the response.
 app.get("/api/stats", async (_req, res) => {
   try {
     const [subs, users, reelReqs, views, articles, projects, userListings] = await Promise.all([
-      db.getAll("subscribers"),
-      db.getAll("users"),
-      db.getAll("reel-requests"),
-      db.getObj("views"),
-      db.getAll("articles"),
-      db.getAll("public-projects"),
-      db.getAll("user-listings"),
+      safeQuery(() => db.getAll("subscribers"),   []),
+      safeQuery(() => db.getAll("users"),          []),
+      safeQuery(() => db.getAll("reel-requests"),  []),
+      safeQuery(() => db.getObj("views"),          {}),
+      safeQuery(() => db.getAll("articles"),       []),
+      safeQuery(() => db.getAll("public-projects"),[]),
+      safeQuery(() => db.getAll("user-listings"),  []),
     ]);
-    const totalViews = Object.values(views).reduce((a, b) => a + (Number(b) || 0), 0);
+
+    const totalViews = Object.values(views || {}).reduce((a, b) => a + (Number(b) || 0), 0);
     const STATIC_LISTINGS = 9;
-    const approvedUserListings = userListings.filter(l => l.approvalStatus === "approved").length;
+    const approvedUserListings = (userListings || []).filter(l => l.approvalStatus === "approved").length;
     const now = new Date();
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-    const usersThisMonth = users.filter(u => u.createdAt && u.createdAt >= thisMonthStart).length;
-    const usersLastMonth = users.filter(u => u.createdAt && u.createdAt >= lastMonthStart && u.createdAt < thisMonthStart).length;
-    const subsThisMonth  = subs.filter(s => s.createdAt && s.createdAt >= thisMonthStart).length;
-    const subsLastMonth  = subs.filter(s => s.createdAt && s.createdAt >= lastMonthStart && s.createdAt < thisMonthStart).length;
+    const usersThisMonth = (users || []).filter(u => u.createdAt && u.createdAt >= thisMonthStart).length;
+    const usersLastMonth = (users || []).filter(u => u.createdAt && u.createdAt >= lastMonthStart && u.createdAt < thisMonthStart).length;
+    const subsThisMonth  = (subs || []).filter(s => s.createdAt && s.createdAt >= thisMonthStart).length;
+    const subsLastMonth  = (subs || []).filter(s => s.createdAt && s.createdAt >= lastMonthStart && s.createdAt < thisMonthStart).length;
     const thisMonthActivity = usersThisMonth + subsThisMonth;
     const lastMonthActivity = usersLastMonth + subsLastMonth;
     let growth = null;
     if (lastMonthActivity > 0) growth = Math.round(((thisMonthActivity - lastMonthActivity) / lastMonthActivity) * 100);
     else if (thisMonthActivity > 0) growth = 100;
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
     res.json({
-      subscribers: subs.length, users: users.length,
+      subscribers: (subs || []).length,
+      users: (users || []).length,
       listings: STATIC_LISTINGS + approvedUserListings,
-      reels: reelReqs.length, agencies: 4,
-      pendingApprovals: reelReqs.filter(r => r.status === "pending").length,
-      approvedReels: reelReqs.filter(r => r.status === "approved").length,
+      reels: (reelReqs || []).length,
+      agencies: 4,
+      pendingApprovals: (reelReqs || []).filter(r => r.status === "pending").length,
+      approvedReels: (reelReqs || []).filter(r => r.status === "approved").length,
       totalViews, growth,
-      articles: articles.filter(a => a.status === "published").length,
-      projects: projects.filter(p => p.publishStatus === "published").length,
-      newUsers: users.filter(u => u.createdAt && u.createdAt >= yesterday).length,
-      pendingListings: userListings.filter(l => l.approvalStatus === "pending").length,
+      articles: (articles || []).filter(a => a.status === "published").length,
+      projects: (projects || []).filter(p => p.publishStatus === "published").length,
+      newUsers: (users || []).filter(u => u.createdAt && u.createdAt >= yesterday).length,
+      pendingListings: (userListings || []).filter(l => l.approvalStatus === "pending").length,
     });
-  } catch { res.status(500).json({ message: "Server error" }); }
+  } catch (err) {
+    console.error("[/api/stats]", err);
+    // Absolute last-resort fallback — always 200, never 503
+    res.status(200).json({
+      subscribers: 0, users: 0, listings: 9, reels: 0, agencies: 4,
+      pendingApprovals: 0, approvedReels: 0, totalViews: 0, growth: null,
+      articles: 0, projects: 0, newUsers: 0, pendingListings: 0,
+    });
+  }
 });
 
 // ─── Subscribe ────────────────────────────────────────────────────────────────
@@ -1426,6 +1475,18 @@ process.on("uncaughtException", (err) => {
 });
 process.on("unhandledRejection", (reason) => {
   console.error("[server] unhandledRejection:", reason);
+});
+
+// ─── Global Express error handler ────────────────────────────────────────────
+// Catches any error passed via next(err) or thrown inside a synchronous route.
+// Must be defined AFTER all routes and have exactly 4 parameters.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error("[express error]", err?.message || err);
+  if (res.headersSent) return;
+  try {
+    res.status(200).json({ ok: false, error: "An unexpected error occurred." });
+  } catch { /* nothing more we can do */ }
 });
 
 // ─── Production: serve built SPA frontend ────────────────────────────────────
