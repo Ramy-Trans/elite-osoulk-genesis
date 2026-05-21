@@ -2,6 +2,7 @@ modules = ["nodejs-20", "web", "python-3.11"]
 [agent]
 expertMode = true
 stack = "BEST_EFFORT_FALLBACK"
+integrations = ["javascript_database:1.0.0"]
 
 [nix]
 channel = "stable-25_05"
@@ -71,3 +72,5 @@ run = ["node", "server/index.js"]
 
 [userenv.shared]
 VITE_GOOGLE_CLIENT_ID = "19856102489-ajcgo0guof71q231fig5lk8dm4vfk7mv.apps.googleusercontent.com"
+PORT = "3001"
+NODE_ENV = "development"
