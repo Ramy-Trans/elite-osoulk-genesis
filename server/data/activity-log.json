@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "id": "169e9f33-5ea5-45d4-a48d-ebc45f780488",
+    "type": "Access",
+    "event": "Login",
+    "subject": "",
+    "userId": "a4e21b78-9639-41a9-b030-f52fe6df9ee1",
+    "userName": "Test User",
+    "createdAt": "2026-05-21T15:26:48.273Z"
+  }
+]

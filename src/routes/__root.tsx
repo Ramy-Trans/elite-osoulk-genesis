@@ -597,15 +597,6 @@ function RootComponent() {
       navigator.serviceWorker.register("/sw.js").catch((err) => { console.error("[sw] Registration failed:", err); });
     }
 
-    // Listen for Supabase password recovery event (fires when user clicks the reset email link)
-    import("@/lib/supabase").then(({ supabase }) => {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-        if (event === "PASSWORD_RECOVERY") {
-          setResetModalOpen(true);
-        }
-      });
-      return () => subscription.unsubscribe();
-    });
   }, []);
 
   return (

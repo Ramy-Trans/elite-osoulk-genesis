@@ -10,8 +10,18 @@ export const Route = createFileRoute("/packages")({
     meta: [
       { title: "الباقات والأسعار — أصولك | Packages & Pricing — Osoulk" },
       { name: "description", content: "باقات أصولك للملاك والوسطاء والمطورين — ابدأ بـ 350 جنيه. Packages for owners, brokers, and developers starting from EGP 350." },
+      { name: "robots", content: "index, follow" },
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "أصولك" },
       { property: "og:title", content: "الباقات والأسعار — أصولك" },
+      { property: "og:description", content: "باقات أصولك للملاك والوسطاء والمطورين — ابدأ بـ 350 جنيه." },
+      { property: "og:image", content: "/properties/ahel-masr-walkway/01.webp" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "الباقات والأسعار — أصولك" },
+      { name: "twitter:description", content: "باقات أصولك للملاك والوسطاء والمطورين — ابدأ بـ 350 جنيه." },
+      { name: "twitter:image", content: "/properties/ahel-masr-walkway/01.webp" },
     ],
+    links: [{ rel: "canonical", href: "https://osoulk.com/packages" }],
   }),
   component: Packages,
 });

@@ -20,11 +20,9 @@ import {
 
 async function fetchAllViews(): Promise<Record<string, number>> {
   try {
-    const { supabase } = await import("@/lib/supabase");
-    const { data } = await supabase.from("property_views").select("property_id, view_count");
-    const result: Record<string, number> = {};
-    for (const row of data ?? []) result[row.property_id] = row.view_count ?? 0;
-    return result;
+    const res = await fetch("/api/properties/views");
+    if (!res.ok) return {};
+    return await res.json();
   } catch { return {}; }
 }
 

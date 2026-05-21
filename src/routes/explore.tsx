@@ -17,8 +17,18 @@ export const Route = createFileRoute("/explore")({
     meta: [
       { title: "استكشف العقارات — أصولك" },
       { name: "description", content: "تصفح مئات العقارات المتاحة للبيع والإيجار في مصر. شقق، فيلات، دوبلكس وأكثر." },
+      { name: "robots", content: "index, follow" },
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "أصولك" },
       { property: "og:title", content: "استكشف العقارات — أصولك" },
+      { property: "og:description", content: "تصفح مئات العقارات المتاحة للبيع والإيجار في مصر. شقق، فيلات، دوبلكس وأكثر." },
+      { property: "og:image", content: "/properties/green5-north/01.webp" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "استكشف العقارات — أصولك" },
+      { name: "twitter:description", content: "تصفح مئات العقارات المتاحة للبيع والإيجار في مصر." },
+      { name: "twitter:image", content: "/properties/green5-north/01.webp" },
     ],
+    links: [{ rel: "canonical", href: "https://osoulk.com/explore" }],
   }),
   component: Explore,
 });

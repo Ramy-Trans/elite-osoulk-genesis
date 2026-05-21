@@ -6,10 +6,20 @@ import { useLang } from "@/lib/language";
 export const Route = createFileRoute("/agencies")({
   head: () => ({
     meta: [
-      { title: "Real Estate Agencies — Osoulk" },
-      { name: "description", content: "Partner agency directory with coverage areas, listing stats, and premium profile cards." },
-      { property: "og:title", content: "Real Estate Agencies — Osoulk" },
+      { title: "الوكالات العقارية — أصولك | Real Estate Agencies — Osoulk" },
+      { name: "description", content: "دليل الوكالات العقارية الشريكة في أصولك. تصفح مناطق التغطية وأفضل العروض والملفات الشخصية المميزة." },
+      { name: "robots", content: "index, follow" },
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "أصولك" },
+      { property: "og:title", content: "الوكالات العقارية — أصولك" },
+      { property: "og:description", content: "دليل الوكالات العقارية الشريكة في أصولك." },
+      { property: "og:image", content: "/properties/ahel-masr-walkway/01.webp" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Real Estate Agencies — Osoulk" },
+      { name: "twitter:description", content: "Partner agency directory with coverage areas, listing stats, and premium profile cards." },
+      { name: "twitter:image", content: "/properties/ahel-masr-walkway/01.webp" },
     ],
+    links: [{ rel: "canonical", href: "https://osoulk.com/agencies" }],
   }),
   component: Agencies,
 });
