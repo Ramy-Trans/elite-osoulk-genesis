@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, createContext, useContext } from "react";
 import { useLang } from "@/lib/language";
 import {
   ShieldCheck, FileCheck2, Video, Users, BarChart3, Mail,
@@ -4481,6 +4481,34 @@ function ThemeTab() {
   );
 }
 
+// ─── Listing form helpers (defined OUTSIDE the tab to keep stable references) ─
+const ListingEditCtx = createContext<{ editing: any; setEditing: React.Dispatch<React.SetStateAction<any>> }>({ editing: null, setEditing: () => {} });
+
+function LF({ k, label, multiline, type: inputType, placeholder, dir: d }: { k: string; label: string; multiline?: boolean; type?: string; placeholder?: string; dir?: string }) {
+  const { editing, setEditing } = useContext(ListingEditCtx);
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-black uppercase tracking-wide text-muted-foreground">{label}</label>
+      {multiline
+        ? <textarea value={String(editing?.[k] ?? "")} onChange={e => setEditing((prev: any) => ({ ...prev, [k]: e.target.value }))} rows={3} dir={d} className="w-full rounded-lg border bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20" placeholder={placeholder} />
+        : <input type={inputType || "text"} value={String(editing?.[k] ?? "")} onChange={e => setEditing((prev: any) => ({ ...prev, [k]: e.target.value }))} className="h-10 w-full rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20" placeholder={placeholder} dir={d} />
+      }
+    </div>
+  );
+}
+
+function ToggleField({ k, label }: { k: string; label: string }) {
+  const { editing, setEditing } = useContext(ListingEditCtx);
+  return (
+    <label className="flex cursor-pointer items-center gap-2 text-sm font-bold text-navy">
+      <button type="button" onClick={() => setEditing((prev: any) => ({ ...prev, [k]: !prev?.[k] }))} className={`relative h-6 w-11 rounded-full transition-colors ${editing?.[k] ? "bg-emerald-500" : "bg-secondary border"}`}>
+        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${editing?.[k] ? "left-5" : "left-0.5"}`} />
+      </button>
+      {label}
+    </label>
+  );
+}
+
 // ─── Listings Admin Tab ───────────────────────────────────────────────────────
 function ListingsAdminTab() {
   const { t } = useLang();
@@ -4568,29 +4596,6 @@ function ListingsAdminTab() {
     featured: listings.filter(l => l.featured).length,
   };
 
-  function LF({ k, label, multiline, type: inputType, placeholder, dir: d }: { k: string; label: string; multiline?: boolean; type?: string; placeholder?: string; dir?: string }) {
-    return (
-      <div>
-        <label className="mb-1 block text-xs font-black uppercase tracking-wide text-muted-foreground">{label}</label>
-        {multiline
-          ? <textarea value={String(editing?.[k] ?? "")} onChange={e => setEditing((prev: any) => ({ ...prev, [k]: e.target.value }))} rows={3} dir={d} className="w-full rounded-lg border bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20" placeholder={placeholder} />
-          : <input type={inputType || "text"} value={String(editing?.[k] ?? "")} onChange={e => setEditing((prev: any) => ({ ...prev, [k]: e.target.value }))} className="h-10 w-full rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20" placeholder={placeholder} dir={d} />
-        }
-      </div>
-    );
-  }
-
-  function ToggleField({ k, label }: { k: string; label: string }) {
-    return (
-      <label className="flex cursor-pointer items-center gap-2 text-sm font-bold text-navy">
-        <button type="button" onClick={() => setEditing((prev: any) => ({ ...prev, [k]: !prev?.[k] }))} className={`relative h-6 w-11 rounded-full transition-colors ${editing?.[k] ? "bg-emerald-500" : "bg-secondary border"}`}>
-          <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${editing?.[k] ? "left-5" : "left-0.5"}`} />
-        </button>
-        {label}
-      </label>
-    );
-  }
-
   if (editing !== null) {
     const FORM_TABS = [
       { id: "basic",    label: "Basic Info" },
@@ -4603,6 +4608,7 @@ function ListingsAdminTab() {
     ] as const;
 
     return (
+      <ListingEditCtx.Provider value={{ editing, setEditing }}>
       <div className="space-y-0">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -4892,6 +4898,7 @@ function ListingsAdminTab() {
           </div>
         )}
       </div>
+      </ListingEditCtx.Provider>
     );
   }
 

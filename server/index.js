@@ -107,23 +107,27 @@ app.get("/api/health", async (_req, res) => {
   const uptimeHours = Math.floor(uptimeMin / 60);
   const mem = process.memoryUsage();
 
-  // Always attempt a real SELECT 1 — no silent fallback
   let dbStatus = "disconnected";
   let dbError  = null;
   let dbLatencyMs = null;
-  try {
-    const pingStart = Date.now();
-    const conn = await getPool().getConnection();
-    await conn.query("SELECT 1");
-    conn.release();
-    dbLatencyMs = Date.now() - pingStart;
-    dbStatus = "connected";
-  } catch (err) {
-    dbError = err.message;
-    console.error("[health] DB SELECT 1 FAILED:", err.message);
+
+  if (!db.isMysql) {
+    dbStatus = "json-files";
+  } else {
+    try {
+      const pingStart = Date.now();
+      const conn = await getPool().getConnection();
+      await conn.query("SELECT 1");
+      conn.release();
+      dbLatencyMs = Date.now() - pingStart;
+      dbStatus = "connected";
+    } catch (err) {
+      dbError = err.message;
+      console.error("[health] DB SELECT 1 FAILED:", err.message);
+    }
   }
 
-  const ok = dbStatus === "connected";
+  const ok = dbStatus === "connected" || dbStatus === "json-files";
   res.status(ok ? 200 : 503).json({
     status: ok ? "ok" : "error",
     db: dbStatus,
