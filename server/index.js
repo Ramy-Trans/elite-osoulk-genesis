@@ -1538,7 +1538,10 @@ if (!IS_SERVERLESS) {
   // DB connection is tested in the background — a slow/failed handshake with
   // a remote host (e.g. Hostinger) previously caused 503s because the server
   // wasn't listening yet when the load-balancer probed it.
-  const PORT = process.env.PORT || 3001;
+  // In production (Replit autoscale), PORT is injected by the platform and maps
+  // to externalPort 80. Default to 5000 to match that [[ports]] mapping.
+  // Dev: PORT=3001 is passed explicitly by the API Server workflow command.
+  const PORT = process.env.PORT || 5000;
   app.listen(PORT, "0.0.0.0", () => {
     const mode = db.isMysql ? "MySQL" : db.isPg ? "PostgreSQL (initialising…)" : "JSON files";
     console.log(`Osoulk API running on http://0.0.0.0:${PORT} [mode: ${mode}]`);

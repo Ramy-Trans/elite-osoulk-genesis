@@ -21,26 +21,37 @@ function extractHostname(connStr) {
 
 async function buildPool(connectionString) {
   const hostname    = extractHostname(connectionString);
-  const ipv4Address = await resolveIPv4(hostname);
+
+  // Only substitute the hostname with its IPv4 address for internal/private hosts
+  // (e.g. Replit's managed PG on helium). For external cloud DBs (Neon, Supabase, etc.)
+  // NEVER replace the hostname — SSL cert validation uses SNI and requires the original
+  // hostname. Replacing with an IP causes "Host: <ip> not in cert's altnames" errors.
+  const isExternalHost =
+    connectionString.includes("neon.tech")     ||
+    connectionString.includes("supabase.co")   ||
+    connectionString.includes("render.com")    ||
+    connectionString.includes("amazonaws.com") ||
+    connectionString.includes("cockroachdb.com");
 
   let connStr = connectionString;
-  if (ipv4Address && ipv4Address !== hostname) {
-    const lastAt  = connectionString.lastIndexOf("@");
-    const afterAt = connectionString.slice(lastAt + 1);
-    connStr = connectionString.slice(0, lastAt + 1) + afterAt.replace(hostname, ipv4Address);
-    console.log(`[pg] ${hostname} → ${ipv4Address} (IPv4)`);
+  if (!isExternalHost) {
+    const ipv4Address = await resolveIPv4(hostname);
+    if (ipv4Address && ipv4Address !== hostname) {
+      const lastAt  = connectionString.lastIndexOf("@");
+      const afterAt = connectionString.slice(lastAt + 1);
+      connStr = connectionString.slice(0, lastAt + 1) + afterAt.replace(hostname, ipv4Address);
+      console.log(`[pg] ${hostname} → ${ipv4Address} (IPv4)`);
+    }
   }
 
-  const useSSL =
-    connectionString.includes("supabase.co") ||
-    connectionString.includes("neon.tech")   ||
-    connectionString.includes("render.com")  ||
-    connectionString.includes("amazonaws.com") ||
-    process.env.NODE_ENV === "production";
+  const useSSL = isExternalHost || process.env.NODE_ENV === "production";
 
   const p = new Pool({
     connectionString: connStr,
-    ssl:  useSSL ? { rejectUnauthorized: false } : false,
+    // rejectUnauthorized:false lets self-signed / private CA certs through.
+    // servername ensures the correct SNI hostname is sent even when connecting
+    // via an IP address (fixes "host not in cert altnames" for cloud DBs).
+    ssl: useSSL ? { rejectUnauthorized: false, servername: hostname } : false,
     max:  10,
     idleTimeoutMillis:       30_000,
     connectionTimeoutMillis: 10_000,
