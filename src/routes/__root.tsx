@@ -171,7 +171,7 @@ function ExploreDropdown({ onNavigate }: { onNavigate?: () => void }) {
   useEffect(() => {
     import("@/lib/api").then(({ getPublicPages }) => {
       getPublicPages()
-        .then((pages) => { setNavPages(pages.filter(p => p.showInNav)); })
+        .then((pages) => { setNavPages(pages.filter(p => p.showInNav).map(p => ({ slug: p.slug, title: p.title, titleAr: p.titleAr ?? "" }))); })
         .catch((err) => { console.error("[pages nav] failed:", err); });
     });
   }, []);
@@ -354,7 +354,7 @@ function Header() {
               <LanguageDropdown variant="desktop" />
 
               {/* Phone — always LTR */}
-              <span dir="ltr" className="hidden text-sm font-bold text-navy lg:block">{t("header.phone")}</span>
+              <a href="tel:+201025812666" dir="ltr" className="hidden text-sm font-bold text-navy hover:text-aqua transition-colors lg:block">{t("header.phone")}</a>
 
               {/* Notification bell */}
               <NotificationBell />
@@ -486,10 +486,10 @@ function Header() {
               {/* Language dropdown — mobile sheet */}
               <LanguageDropdown variant="mobile" />
 
-              <div className="col-span-2 flex items-center justify-center gap-2 py-2 text-sm font-bold text-navy">
+              <a href="tel:+201025812666" className="col-span-2 flex items-center justify-center gap-2 py-2 text-sm font-bold text-navy hover:text-aqua transition-colors">
                 <Phone className="h-4 w-4 text-aqua" />
                 <span dir="ltr">{t("header.phone")}</span>
-              </div>
+              </a>
             </div>
 
             {/* Safe area for bottom nav */}

@@ -792,26 +792,56 @@ export function ConsultationForm() {
   );
 }
 
+type FaqItem = { q: string; a: string; questionAr?: string; answerAr?: string };
+
 export function FAQPreview() {
   const { t, lang } = useLang();
-  const faqData = lang === "ar" ? faqsAr : faqs;
-  const links = ["/about", "/create-listing", "/reels"];
+  const staticData: FaqItem[] = (lang === "ar" ? faqsAr : faqs).map(f => ({
+    q: f.q,
+    a: f.a,
+    questionAr: (f as FaqItem).questionAr,
+    answerAr: (f as FaqItem).answerAr,
+  }));
+  const [items, setItems] = useState<FaqItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    import("@/lib/api").then(({ getFaqs }) => {
+      getFaqs()
+        .then(data => {
+          if (data.length > 0) {
+            setItems(data.map(f => ({ q: f.question, a: f.answer, questionAr: f.questionAr, answerAr: f.answerAr })));
+          } else {
+            setItems(staticData);
+          }
+          setLoaded(true);
+        })
+        .catch(() => { setItems(staticData); setLoaded(true); });
+    });
+  }, []);
+
+  const displayItems: FaqItem[] = loaded ? items : staticData;
+
   return (
     <section className="py-14">
       <div className="os-container">
         <SectionHeader kicker={t("faq.kicker")} title={t("faq.title")} />
         <div className="mx-auto max-w-4xl space-y-3">
-          {faqData.map((f, i) => (
-            <details key={f.q} open={i === 0} className="rounded-xl border bg-card p-5 shadow-float">
-              <summary className="cursor-pointer font-black text-navy">{f.q}</summary>
-              <p className="mt-3 text-muted-foreground">
-                {f.a}{" "}
-                <Link to={links[i] as "/" | "/about" | "/create-listing" | "/reels"} className="font-bold text-navy underline">
-                  {lang === "ar" ? "اعرف المزيد" : "Learn more"}
-                </Link>
-              </p>
-            </details>
-          ))}
+          {displayItems.map((f, i) => {
+            const q = lang === "ar" && f.questionAr ? f.questionAr : f.q;
+            const a = lang === "ar" && f.answerAr ? f.answerAr : f.a;
+            return (
+              <details key={q} open={i === 0} className="rounded-xl border bg-card p-5 shadow-float">
+                <summary className="cursor-pointer font-black text-navy">{q}</summary>
+                <p className="mt-3 text-muted-foreground">{a}</p>
+              </details>
+            );
+          })}
+        </div>
+        <div className="mx-auto mt-6 max-w-4xl text-center">
+          <Link to="/faqs" className="text-sm font-bold text-navy underline-offset-4 hover:underline">
+            {lang === "ar" ? "عرض جميع الأسئلة الشائعة ←" : "View all FAQs ←"}
+          </Link>
         </div>
       </div>
     </section>
@@ -830,7 +860,7 @@ export function Footer() {
   useEffect(() => {
     import("@/lib/api").then(({ getPublicPages }) => {
       getPublicPages()
-        .then((pages) => { setCmsPages(pages.filter(p => p.showInFooter)); })
+        .then((pages) => { setCmsPages(pages.filter(p => p.showInFooter).map(p => ({ slug: p.slug, title: p.title, titleAr: p.titleAr ?? "" }))); })
         .catch((err) => { console.error("[pages footer] failed:", err); });
     });
   }, []);

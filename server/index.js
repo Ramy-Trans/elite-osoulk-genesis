@@ -1354,6 +1354,53 @@ app.delete("/api/admin/pages/:id", requireAdmin, async (req, res) => {
   catch { res.status(500).json({ message: "Server error" }); }
 });
 
+// ─── Viewing Requests ─────────────────────────────────────────────────────────
+app.post("/api/viewings", async (req, res) => {
+  try {
+    const { propertyId, propertyTitle, name, phone, date, time, notes, contactPhone } = req.body ?? {};
+    if (!propertyId || !name || !phone || !date) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+    const entry = {
+      id: randomUUID(),
+      propertyId: String(propertyId),
+      propertyTitle: String(propertyTitle ?? ""),
+      name: String(name),
+      phone: String(phone),
+      date: String(date),
+      time: String(time ?? "10:00"),
+      notes: String(notes ?? ""),
+      contactPhone: String(contactPhone ?? ""),
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+    await db.insert("viewings", entry);
+    res.json({ message: "Viewing request received", id: entry.id });
+  } catch { res.status(500).json({ message: "Server error" }); }
+});
+app.get("/api/admin/viewings", requireAdmin, async (_req, res) => {
+  try { res.json(await db.getAll("viewings")); }
+  catch { res.status(500).json({ message: "Server error" }); }
+});
+app.patch("/api/admin/viewings/:id", requireAdmin, async (req, res) => {
+  try {
+    const all = await db.getAll("viewings");
+    const idx = all.findIndex(v => v.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ message: "Not found" });
+    if (req.body.status) all[idx].status = req.body.status;
+    if (req.body.notes !== undefined) all[idx].adminNotes = req.body.notes;
+    all[idx].updatedAt = new Date().toISOString();
+    await db.replaceAll("viewings", all);
+    res.json(all[idx]);
+  } catch { res.status(500).json({ message: "Server error" }); }
+});
+app.delete("/api/admin/viewings/:id", requireAdmin, async (req, res) => {
+  try {
+    await db.replaceAll("viewings", (await db.getAll("viewings")).filter(v => v.id !== req.params.id));
+    res.json({ message: "Deleted" });
+  } catch { res.status(500).json({ message: "Server error" }); }
+});
+
 // ─── HTML Snippets ────────────────────────────────────────────────────────────
 app.get("/api/html-snippets", async (_req, res) => {
   try { res.json((await db.getAll("html-snippets")).filter(s => s.enabled !== false)); } catch { res.status(500).json({ message: "Server error" }); }

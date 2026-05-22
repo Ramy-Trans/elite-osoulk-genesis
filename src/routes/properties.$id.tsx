@@ -3,6 +3,7 @@ import {
   BedDouble, Bath, Maximize2, Tag, Phone, Calendar,
   Heart, Share2, MapPin, Sparkles,
   ChevronLeft, ChevronRight, Eye, MessageCircle, X, Home, QrCode, GitCompare,
+  CheckCircle2, AlertCircle,
 } from "lucide-react";
 import { properties } from "@/components/osoulk/site";
 import { Button } from "@/components/ui/button";
@@ -295,6 +296,136 @@ function CompareButton({ id, title, image }: { id: string; title: string; image:
   );
 }
 
+function ViewingModal({ propertyId, propertyTitle, phone }: { propertyId: string; propertyTitle: string; phone: string }) {
+  const { lang } = useLang();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", phone: "", date: "", time: "10:00", notes: "" });
+  const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const times = ["09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00"];
+
+  function openModal() { setOpen(true); setStatus("idle"); }
+  function closeModal() { setOpen(false); setStatus("idle"); setForm({ name: "", phone: "", date: "", time: "10:00", notes: "" }); }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.name.trim() || !form.phone.trim() || !form.date) return;
+    setStatus("sending");
+    try {
+      const res = await fetch("/api/viewings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ propertyId, propertyTitle, ...form, contactPhone: phone }),
+      });
+      if (res.ok) { setStatus("success"); }
+      else { setStatus("error"); }
+    } catch { setStatus("error"); }
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+
+  return (
+    <>
+      <button
+        onClick={openModal}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-navy/25 px-4 py-3 text-sm font-black text-navy transition-all hover:bg-secondary active:scale-95"
+      >
+        <Calendar className="h-4 w-4" />
+        {lang === "ar" ? "حجز معاينة" : "Schedule Viewing"}
+      </button>
+
+      {open && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) closeModal(); }}>
+          <div className="w-full max-w-md rounded-2xl border bg-background shadow-premium p-6" dir={lang === "ar" ? "rtl" : "ltr"}>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-black text-navy">
+                {lang === "ar" ? "حجز موعد معاينة" : "Schedule a Viewing"}
+              </h2>
+              <button onClick={closeModal} className="rounded-full p-1 hover:bg-secondary transition-colors">
+                <X className="h-5 w-5 text-muted-foreground" />
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4 line-clamp-1">
+              {lang === "ar" ? "العقار: " : "Property: "}<span className="font-bold text-navy">{propertyTitle}</span>
+            </p>
+
+            {status === "success" ? (
+              <div className="flex flex-col items-center gap-3 py-8 text-center">
+                <CheckCircle2 className="h-14 w-14 text-green-500" />
+                <p className="font-black text-navy text-lg">{lang === "ar" ? "تم تأكيد الحجز!" : "Viewing Booked!"}</p>
+                <p className="text-sm text-muted-foreground">
+                  {lang === "ar" ? "سيتواصل معك فريقنا لتأكيد الموعد." : "Our team will contact you to confirm the appointment."}
+                </p>
+                <button onClick={closeModal} className="mt-2 rounded-xl bg-navy px-6 py-2.5 text-sm font-black text-white hover:bg-navy/85 transition-colors">
+                  {lang === "ar" ? "حسناً" : "Done"}
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <input
+                  required
+                  value={form.name}
+                  onChange={e => setForm(s => ({ ...s, name: e.target.value }))}
+                  placeholder={lang === "ar" ? "الاسم الكامل *" : "Full Name *"}
+                  className="h-11 w-full rounded-xl border bg-card px-4 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20"
+                />
+                <input
+                  required
+                  type="tel"
+                  value={form.phone}
+                  onChange={e => setForm(s => ({ ...s, phone: e.target.value }))}
+                  placeholder={lang === "ar" ? "رقم الهاتف *" : "Phone Number *"}
+                  className="h-11 w-full rounded-xl border bg-card px-4 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20"
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-muted-foreground">{lang === "ar" ? "التاريخ *" : "Date *"}</label>
+                    <input
+                      required
+                      type="date"
+                      min={today}
+                      value={form.date}
+                      onChange={e => setForm(s => ({ ...s, date: e.target.value }))}
+                      className="h-11 w-full rounded-xl border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-muted-foreground">{lang === "ar" ? "الوقت" : "Time"}</label>
+                    <select
+                      value={form.time}
+                      onChange={e => setForm(s => ({ ...s, time: e.target.value }))}
+                      className="h-11 w-full rounded-xl border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20"
+                    >
+                      {times.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <textarea
+                  value={form.notes}
+                  onChange={e => setForm(s => ({ ...s, notes: e.target.value }))}
+                  placeholder={lang === "ar" ? "ملاحظات إضافية (اختياري)" : "Additional notes (optional)"}
+                  rows={2}
+                  className="w-full rounded-xl border bg-card p-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20 resize-none"
+                />
+                {status === "error" && (
+                  <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    {lang === "ar" ? "حدث خطأ، يرجى المحاولة مرة أخرى." : "Something went wrong. Please try again."}
+                  </div>
+                )}
+                <Button type="submit" className="w-full" size="lg" variant="luxury" disabled={status === "sending"}>
+                  {status === "sending"
+                    ? (lang === "ar" ? "جاري الإرسال…" : "Sending…")
+                    : (lang === "ar" ? "تأكيد الحجز" : "Confirm Booking")}
+                </Button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function WhatsAppButton({ phone, propertyTitle }: { phone: string; propertyTitle: string }) {
   const { t } = useLang();
   const msg = encodeURIComponent(`مرحباً، أنا مهتم بـ "${propertyTitle}". هل يمكنكم التواصل معي؟`);
@@ -559,12 +690,10 @@ function PropertyDetail() {
               <p className="mt-1 text-sm font-semibold text-muted-foreground">{t("property.prime")}</p>
 
               <div className="mt-6 space-y-3">
-                <Button className="w-full" size="lg" variant="luxury">
+                <a href={`tel:${(property.ownerPhone || "+201025812666").replace(/[^0-9+]/g, "")}`} className="flex w-full items-center justify-center gap-2 rounded-xl bg-navy px-4 py-3 text-sm font-black text-white shadow-md transition-all hover:bg-navy/85 hover:shadow-lg active:scale-95">
                   <Phone className="h-4 w-4" /> {t("property.requestCall")}
-                </Button>
-                <Button className="w-full" size="lg" variant="outline">
-                  <Calendar className="h-4 w-4" /> {t("property.scheduleViewing")}
-                </Button>
+                </a>
+                <ViewingModal propertyId={property.id} propertyTitle={title} phone={waPhone} />
                 {property.tourUrl && (
                   <a
                     href={property.tourUrl}

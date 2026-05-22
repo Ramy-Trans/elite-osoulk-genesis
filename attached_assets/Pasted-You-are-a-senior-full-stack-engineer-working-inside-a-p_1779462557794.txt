@@ -1,0 +1,305 @@
+You are a senior full-stack engineer working inside a production-grade Next.js/React + Node.js application with dashboard CMS functionality. Your task is to fully audit, debug, repair, and production-harden the entire website and admin dashboard.
+
+Repository:
+https://github.com/Ramy-Trans/elite-osoulk-genesis/
+
+Critical Rules:
+
+* DO NOT stop midway.
+* DO NOT leave placeholders or TODOs.
+* DO NOT create a checkpoint/commit until EVERYTHING is fixed and verified.
+* AFTER all fixes are completed and tested successfully, push all changes to GitHub.
+* Ensure production stability, responsive rendering, and database consistency.
+* Investigate both frontend and backend thoroughly.
+* Validate database reads/writes, API routes, server actions, routing, rendering, hydration, and caching.
+* Fix root causes instead of patching symptoms.
+* Preserve current design language and UI styling unless functionality requires changes.
+* Verify all changes manually before final push.
+
+==================================================
+
+1. DYNAMIC PAGES BUG (CRITICAL)
+   ==================================================
+
+Problem:
+When a new page is created from Dashboard → Content → Pages:
+
+* The page saves successfully.
+* The slug/link is generated.
+* The page appears in dashboard data.
+* BUT visiting the page URL still renders the homepage instead of the newly created page.
+
+Required:
+
+* Diagnose routing issue completely.
+* Fix dynamic page rendering.
+* Ensure slug-based pages resolve correctly.
+* Ensure server-side rendering/static rendering logic works properly.
+* Ensure middleware/rewrites are not hijacking routes.
+* Verify route priority.
+* Verify dynamic routes are generated correctly.
+* Verify database fetch by slug works.
+* Ensure pages work after deployment and refresh.
+* Ensure SEO metadata works for created pages.
+* Ensure 404 only appears for truly missing pages.
+
+Test Cases:
+
+* Create a new page.
+* Publish it.
+* Open generated slug directly.
+* Refresh browser.
+* Open in incognito.
+* Open after rebuild.
+* Confirm homepage no longer overrides route.
+
+==================================================
+2. FAQ SYSTEM BUG
+=================
+
+Problem:
+When adding a new FAQ from Dashboard → FAQs:
+
+* FAQ saves in dashboard/database.
+* BUT it does NOT render on homepage FAQ section.
+
+Required:
+
+* Fix frontend FAQ rendering.
+* Ensure homepage fetches latest FAQs dynamically.
+* Ensure FAQs appear under existing questions automatically.
+* Ensure sorting/order logic works.
+* Ensure cache invalidation/revalidation works.
+* Ensure newly created FAQs appear without needing manual intervention.
+* Verify no hydration mismatch exists.
+* Verify API/database query consistency.
+
+==================================================
+3. ARTICLES/BLOG SYSTEM BUG
+===========================
+
+Problem:
+Newly created articles are unclickable.
+Existing articles work correctly.
+New articles should behave exactly like existing article pages.
+
+Required:
+
+* Audit article routing completely.
+* Fix article detail page navigation.
+* Ensure every article opens its own dedicated page.
+* Ensure slugs generate correctly.
+* Ensure clickable links/cards work everywhere.
+* Ensure article page fetches correct content.
+* Ensure SEO metadata works.
+* Ensure article images/content render properly.
+* Ensure no dead links exist.
+* Ensure all article cards are interactive.
+
+Test:
+
+* Create multiple new articles.
+* Open each article.
+* Refresh pages directly.
+* Verify consistency with existing articles.
+
+==================================================
+4. FULL DASHBOARD AUDIT
+=======================
+
+Perform a COMPLETE audit of all dashboard modules and verify:
+
+* Database operations
+* CRUD functionality
+* Validation
+* API responses
+* Client rendering
+* Error handling
+* Cache invalidation
+* Permissions/auth
+* Production readiness
+
+Audit ALL sections below thoroughly:
+
+OVERVIEW
+
+* Dashboard
+* Analytics
+
+CONTENT
+
+* Content Sections
+* Text Content
+* Articles & Blog
+* FAQs
+* Pages
+* Properties
+* admin.nav.listings
+* Projects & Compounds
+* Media Gallery
+* Custom HTML
+
+USERS & CRM
+
+* Users
+* Reel Requests
+* Subscribers
+
+SYSTEM
+
+* Site Settings
+* Theme & Colors
+* SEO
+* Server Status
+* Activity Log
+
+Requirements:
+
+* Every create/edit/delete action must work correctly.
+* Ensure no silent failures.
+* Ensure database schema consistency.
+* Ensure validation errors are handled properly.
+* Ensure loading states and error states work.
+* Fix broken queries, mutations, API routes, or UI rendering issues.
+* Remove any dead code causing instability.
+* Ensure no console errors or warnings remain.
+
+==================================================
+5. PROPERTY ACTION BUTTONS
+==========================
+
+Inside property pages, ensure ALL buttons function correctly.
+
+A) "طلب مكالمة"
+Required:
+
+* Must open device calling app.
+* Use proper tel: protocol.
+* Mobile compatible.
+* Desktop graceful fallback.
+
+B) "حجز معاينة"
+Required:
+
+* Integrate an actual calendar/booking system INSIDE the website.
+* Users should be able to select:
+
+  * Date
+  * Time
+  * Name
+  * Phone
+  * Notes
+* Save booking requests properly.
+* Ensure responsive modal/page.
+* Prevent double-booking logic if applicable.
+* Send/store booking data correctly.
+* Add validation and success/error states.
+
+C) WhatsApp Button
+Required:
+
+* Keep existing behavior.
+* Verify functionality across all property pages.
+
+==================================================
+6. NAVBAR PHONE NUMBER
+======================
+
+Problem:
+Phone number:
++201025812666
+
+Required:
+
+* Must open calling app directly using tel: protocol.
+* Ensure clickable on mobile and desktop.
+* Ensure accessibility and proper cursor states.
+
+==================================================
+7. RANDOM 504 TIMEOUTS
+======================
+
+Critical:
+Random 504 timeout errors occur.
+
+Required:
+
+* Diagnose root causes thoroughly.
+* Investigate:
+
+  * Database queries
+  * Blocking requests
+  * API response delays
+  * SSR bottlenecks
+  * Infinite loops
+  * Memory leaks
+  * Middleware
+  * External API dependencies
+  * Build configuration
+  * Hosting/server configuration
+  * Caching issues
+  * Revalidation logic
+  * Long-running queries
+  * N+1 queries
+
+Fix Requirements:
+
+* Optimize slow queries.
+* Add proper error boundaries.
+* Add request timeout handling where needed.
+* Prevent server hangs.
+* Improve stability under concurrent requests.
+* Ensure production reliability.
+
+==================================================
+8. PRODUCTION QUALITY REQUIREMENTS
+==================================
+
+You MUST:
+
+* Run linting.
+* Run type checks.
+* Run production build.
+* Fix all build issues.
+* Remove all console errors.
+* Remove hydration issues.
+* Remove routing warnings.
+* Verify responsive behavior.
+* Verify Arabic RTL layout consistency.
+* Ensure accessibility standards.
+* Ensure SEO integrity.
+* Ensure forms validate correctly.
+* Ensure no broken imports/routes exist.
+
+==================================================
+9. FINAL DELIVERY REQUIREMENTS
+==============================
+
+Before pushing:
+
+* Test all repaired systems manually.
+* Verify database persistence.
+* Verify frontend rendering.
+* Verify dashboard CRUD.
+* Verify dynamic routing.
+* Verify booking/calendar flow.
+* Verify FAQ rendering.
+* Verify article pages.
+* Verify property buttons.
+* Verify no random 504s remain.
+
+After EVERYTHING is fixed:
+
+1. Commit all changes cleanly.
+2. Push directly to GitHub repository.
+3. Provide summary of:
+
+   * Root causes found
+   * Files modified
+   * Architecture improvements
+   * Performance optimizations
+   * Stability fixes
+   * Security improvements
+   * Remaining recommendations (if any)
+
+DO NOT stop until the entire website and dashboard are functioning correctly end-to-end.
