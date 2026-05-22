@@ -56,6 +56,16 @@ async function buildPool(connectionString) {
     idleTimeoutMillis:       30_000,
     connectionTimeoutMillis: 10_000,
   });
+
+  // Set a PostgreSQL-level statement timeout on every new connection.
+  // This prevents any individual query from hanging forever, which is the
+  // primary cause of 504 gateway timeouts under load or during DB hiccups.
+  p.on("connect", (client) => {
+    client.query("SET statement_timeout = '10000'").catch((err) => {
+      console.warn("[pg] Could not set statement_timeout:", err.message);
+    });
+  });
+
   p.on("error", (err) => console.error("[pg] Pool error:", err.message));
   return p;
 }

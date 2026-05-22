@@ -62,18 +62,40 @@ function requireAdmin(req, res, next) {
 }
 
 // ─── User auth middleware (async) ─────────────────────────────────────────────
+// Short-lived in-memory cache so every authenticated request doesn't need
+// a full DB round-trip. Entries expire after 30 seconds.
+const _userCache = new Map(); // id → { user, expiresAt }
+const USER_CACHE_TTL = 30_000;
+
 async function requireUser(req, res, next) {
   const id = req.headers["x-user-id"];
   if (!id) return res.status(401).json({ message: "Not signed in" });
+
+  const cached = _userCache.get(id);
+  if (cached && cached.expiresAt > Date.now()) {
+    req.user = cached.user;
+    return next();
+  }
+
   try {
     const users = await db.getAll("users");
     const u = users.find(x => x.id === id);
-    if (!u) return res.status(401).json({ message: "Session invalid" });
+    if (!u) {
+      _userCache.delete(id);
+      return res.status(401).json({ message: "Session invalid" });
+    }
+    _userCache.set(id, { user: u, expiresAt: Date.now() + USER_CACHE_TTL });
     req.user = u;
     next();
   } catch {
     res.status(500).json({ message: "Server error" });
   }
+}
+
+// Invalidate the user cache when a user record changes.
+function invalidateUserCache(id) {
+  if (id) _userCache.delete(id);
+  else _userCache.clear();
 }
 
 const app = express();
@@ -86,6 +108,20 @@ app.use((_req, res, next) => {
   res.setHeader("X-XSS-Protection", "1; mode=block");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  next();
+});
+
+// ─── Per-request timeout middleware ──────────────────────────────────────────
+// Sends a 503 if any route handler hasn't responded within 20 seconds.
+// This is what prevents Replit's proxy from issuing a 504 gateway timeout —
+// we always reply before the upstream deadline.
+app.use((req, res, next) => {
+  req.setTimeout(20_000, () => {
+    if (!res.headersSent) {
+      console.warn("[timeout] 20s limit reached:", req.method, req.path);
+      res.status(503).json({ ok: false, error: "Request timed out. Please try again." });
+    }
+  });
   next();
 });
 
@@ -520,6 +556,7 @@ app.patch("/api/users/:id", requireAdmin, async (req, res) => {
       }
     }
     await db.replaceAll("users", users);
+    invalidateUserCache(req.params.id);
     const { passwordHash: _ph, ...safeUser } = user;
     res.json(safeUser);
   } catch { res.status(500).json({ message: "Server error" }); }
@@ -530,6 +567,7 @@ app.delete("/api/users/:id", requireAdmin, async (req, res) => {
     const users = await db.getAll("users");
     if (!users.find(u => u.id === req.params.id)) return res.status(404).json({ message: "User not found" });
     await db.replaceAll("users", users.filter(u => u.id !== req.params.id));
+    invalidateUserCache(req.params.id);
     res.json({ message: "User deleted successfully" });
   } catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -564,6 +602,7 @@ app.patch("/api/users/:id/reset-password", requireAdmin, async (req, res) => {
     user.passwordHash = hashPwd(newPwd);
     user.updatedAt = new Date().toISOString();
     await db.replaceAll("users", users);
+    invalidateUserCache(req.params.id);
     res.json({ message: "Password reset successfully.", newPassword: newPwd });
   } catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -1589,7 +1628,7 @@ if (!IS_SERVERLESS) {
   // to externalPort 80. Default to 5000 to match that [[ports]] mapping.
   // Dev: PORT=3001 is passed explicitly by the API Server workflow command.
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, "0.0.0.0", () => {
+  const server = app.listen(PORT, "0.0.0.0", () => {
     const mode = db.isMysql ? "MySQL" : db.isPg ? "PostgreSQL (initialising…)" : "JSON files";
     console.log(`Osoulk API running on http://0.0.0.0:${PORT} [mode: ${mode}]`);
 
@@ -1636,6 +1675,13 @@ if (!IS_SERVERLESS) {
         });
     }
   });
+
+  // Set HTTP-level timeouts on the server socket.
+  // This ensures the Node HTTP server itself enforces response deadlines,
+  // independent of the per-request middleware above.
+  server.timeout = 25_000;           // 25s hard limit per connection
+  server.keepAliveTimeout = 30_000;  // 30s keep-alive
+  server.headersTimeout   = 31_000;  // must exceed keepAliveTimeout
 }
 
 export default app;
