@@ -4135,9 +4135,13 @@ function PagesTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<Partial<CmsPage> | null>(null);
+  const editingRef = useRef<Partial<CmsPage> | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [listSaved, setListSaved] = useState(false);
+
+  useEffect(() => { editingRef.current = editing; }, [editing]);
 
   const EMPTY: Partial<CmsPage> = {
     slug: "", title: "", titleAr: "", heroImage: "", heroTitle: "", heroTitleAr: "",
@@ -4153,17 +4157,23 @@ function PagesTab() {
   useEffect(() => { load(); }, []);
 
   async function savePage() {
-    if (!editing) return;
+    const current = editingRef.current;
+    if (!current) return;
+    if (!current.title && !current.titleAr) {
+      setError("Please enter a page title (Arabic or English) before saving.");
+      return;
+    }
     setSaving(true); setError("");
     try {
-      if (editing.id) {
-        const updated = await updateAdminPage(editing.id, editing);
-        setPages(prev => prev.map(p => p.id === updated.id ? updated : p));
+      if (current.id) {
+        await updateAdminPage(current.id, current);
       } else {
-        const created = await createAdminPage(editing);
-        setPages(prev => [created, ...prev]);
+        await createAdminPage(current);
       }
-      setEditing(null); setSaved(true); setTimeout(() => setSaved(false), 2000);
+      setEditing(null);
+      setSaved(true); setTimeout(() => setSaved(false), 2000);
+      setListSaved(true); setTimeout(() => setListSaved(false), 3000);
+      await load();
     } catch (err) { setError(err instanceof Error ? err.message : "Save failed"); } finally { setSaving(false); }
   }
 
@@ -4197,6 +4207,7 @@ function PagesTab() {
           <Button variant="outline" onClick={load}><RefreshCw className="h-4 w-4" /></Button>
         </div>
       </div>
+      {listSaved && <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm font-bold text-emerald-700 flex items-center gap-2"><span>✓</span> Page saved successfully.</div>}
       {error && <div className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
       {loading ? (
         <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-secondary" />)}</div>

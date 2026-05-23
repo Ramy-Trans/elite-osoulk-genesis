@@ -5,7 +5,7 @@ import { getCachedUser, getSiteSettings, applyThemeToDOM, type CurrentUser } fro
 import { NotificationBell } from "@/components/osoulk/notification-bell";
 
 import "../styles.css";
-import osoulkLogo from "@/assets/osoulk-logo.webp";
+import osoulkLogo from "@/assets/osoulk-logo.svg";
 import { Button } from "@/components/ui/button";
 import { SubscribeModal } from "@/components/osoulk/subscribe-modal";
 import { SignUpModal } from "@/components/osoulk/signup-modal";

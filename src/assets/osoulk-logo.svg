@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 100" fill="#061E46">
+  <!-- Left wing / arm -->
+  <path d="M40,20 C32,13 20,6 6,4 L8,10 C20,12 30,18 40,26 C50,18 60,12 72,10 L74,4 C60,6 48,13 40,20Z"/>
+  <!-- Three horizontal bars -->
+  <rect x="22" y="32" width="36" height="6" rx="1.5"/>
+  <rect x="17" y="43" width="46" height="6" rx="1.5"/>
+  <rect x="12" y="54" width="56" height="6" rx="1.5"/>
+  <!-- Pedestal base -->
+  <rect x="29" y="65" width="22" height="14" rx="1.5"/>
+  <!-- OSOULK wordmark -->
+  <text x="100" y="70" font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="46" letter-spacing="3">OSOULK</text>
+</svg>
