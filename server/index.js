@@ -1617,7 +1617,20 @@ if (!IS_SERVERLESS) {
     });
     console.log("[server] serving production SPA from dist/client/");
   } else {
-    console.log("[server] dist/client not found — running in API-only mode");
+    // Dev mode: embed Vite as Express middleware so both API and frontend
+    // are served from a single port — no proxy required.
+    try {
+      const { createServer: createViteServer } = await import("vite");
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+      console.log("[server] Vite dev middleware attached — frontend + API on the same port");
+    } catch (e) {
+      console.warn("[server] Could not attach Vite middleware:", e.message);
+      console.log("[server] Running in API-only mode");
+    }
   }
 
   // Bind the port FIRST so the platform health-check passes immediately.
