@@ -1,18 +1,6 @@
-const { createClient } = require('@supabase/supabase-js');
+import pg from "pg";
+const { Pool } = pg;
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-// Test the connection
-supabase
-  .from('your_table')
-  .select('*')
-  .limit(1)
-  .then(({ data, error }) => {
-    if (error) console.error('Connection error:', error);
-    else console.log('Connected:', data);
-  });
-
-module.exports = supabase;
+export default pool;
