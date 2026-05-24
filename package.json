@@ -5,7 +5,7 @@
   "type": "module",
   "version": "1.0.0",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "concurrently -k -n \"api,vite\" -c \"blue,green\" \"node server/index.js\" \"vite dev\"",
     "server": "node server/index.js",
     "start": "node server/index.js",
     "build": "vite build",
@@ -87,6 +87,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
+    "concurrently": "^9.2.1",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.6",
