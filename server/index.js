@@ -7,15 +7,6 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { createHash } from "crypto";
 import os from "os";
-import { createClient } from "@supabase/supabase-js";
-import ws from "ws";
-
-const supabaseAdmin = (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
-  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-      realtime: { transport: ws },
-    })
-  : null;
 
 import db, {
   setDataDir,
@@ -422,37 +413,6 @@ app.post("/api/register", async (req, res) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ message: "A valid email is required." });
     if (password.length < 6) return res.status(400).json({ message: "Password must be at least 6 characters." });
 
-    // ── Supabase Auth signup (creates user + sends confirmation email) ──────
-    if (supabaseAdmin) {
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { fullName, phone, role: normalizeRole(role), company },
-      });
-      if (authError) {
-        if (authError.message?.toLowerCase().includes("already registered") || authError.status === 422)
-          return res.status(409).json({ message: "An account with this email already exists." });
-        return res.status(500).json({ message: authError.message || "Registration failed." });
-      }
-      const uid = authData.user.id;
-      // Mirror profile into local DB so the rest of the app works normally
-      const users = await db.getAll("users");
-      let user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (!user) {
-        user = {
-          id: uid, fullName, email, phone,
-          passwordHash: hashPwd(password), plan: "free",
-          role: normalizeRole(role), company, status: "active",
-          createdAt: new Date().toISOString(),
-        };
-        await db.insert("users", user);
-      }
-      const { passwordHash: _ph, ...safeUser } = user;
-      return res.json({ message: "Account created successfully!", user: safeUser });
-    }
-
-    // ── Fallback: no Supabase configured ────────────────────────────────────
     const users = await db.getAll("users");
     if (users.find(u => u.email.toLowerCase() === email.toLowerCase()))
       return res.status(409).json({ message: "An account with this email already exists." });
@@ -474,34 +434,6 @@ app.post("/api/login", async (req, res) => {
     const { email, password } = req.body ?? {};
     if (!email || !password) return res.status(400).json({ message: "Email and password are required." });
 
-    // ── Supabase Auth login ─────────────────────────────────────────────────
-    if (supabaseAdmin) {
-      const { data: authData, error: authError } = await supabaseAdmin.auth.signInWithPassword({ email, password });
-      if (authError) return res.status(401).json({ message: "Invalid email or password." });
-
-      // Sync profile from Supabase into local DB if missing
-      const users = await db.getAll("users");
-      let user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (!user) {
-        const meta = authData.user.user_metadata || {};
-        user = {
-          id: authData.user.id,
-          fullName: meta.fullName || meta.full_name || email,
-          email, phone: meta.phone || "",
-          passwordHash: hashPwd(password), plan: "free",
-          role: normalizeRole(meta.role || "individual"),
-          company: meta.company || "", status: "active",
-          createdAt: authData.user.created_at || new Date().toISOString(),
-        };
-        await db.insert("users", user);
-      }
-      if (user.status === "inactive") return res.status(403).json({ message: "Account is deactivated." });
-      const { passwordHash: _ph, ...safeUser } = user;
-      await logActivity({ type: "Access", event: "Login", userId: user.id, userName: user.fullName });
-      return res.json({ message: "Signed in successfully", user: safeUser, token: user.id });
-    }
-
-    // ── Fallback ────────────────────────────────────────────────────────────
     const users = await db.getAll("users");
     const user = users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
     if (!user || user.passwordHash !== hashPwd(password))
@@ -519,16 +451,6 @@ app.post("/api/forgot-password", async (req, res) => {
     const { email } = req.body ?? {};
     if (!email) return res.status(400).json({ message: "البريد الإلكتروني مطلوب." });
 
-    // ── Supabase: send real OTP/magic-link reset email ──────────────────────
-    if (supabaseAdmin) {
-      const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-        redirectTo: `${process.env.SITE_URL || "https://osoulk.netlify.app"}/reset-password`,
-      });
-      if (error) return res.status(400).json({ message: error.message });
-      return res.json({ message: "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني." });
-    }
-
-    // ── Fallback ────────────────────────────────────────────────────────────
     const users = await db.getAll("users");
     const user = users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
     if (!user) return res.status(404).json({ message: "لا يوجد حساب مرتبط بهذا البريد." });

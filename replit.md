@@ -166,4 +166,4 @@ Navy, Aqua, Gold, Porcelain. CSS classes: `os-container`, `premium-card`, `secti
 The Vite dev server proxies all `/api` requests to `http://localhost:3001`. The `src/lib/api.ts` `BASE` is `""` (empty string), so all API calls use relative paths that are proxied automatically. This avoids browser CORS issues in the Replit environment.
 
 ## GitHub Remote
-`https://github.com/TheEarBud/osoulk-premium-nexus`
+`https://github.com/Ramy-Trans/elite-osoulk-genesis`
