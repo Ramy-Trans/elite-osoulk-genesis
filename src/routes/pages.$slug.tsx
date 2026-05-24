@@ -43,6 +43,13 @@ function CmsPageRoute() {
   const page = Route.useLoaderData() as CmsPage;
   const ar = lang === "ar";
 
+  // HTML-mode pages are served directly by Express at /p/:slug
+  // If someone navigates to /pages/:slug for an html-mode page, redirect them
+  if ((page as any).renderMode === "html" && page.slug && typeof window !== "undefined") {
+    window.location.replace(`/p/${page.slug}`);
+    return null;
+  }
+
   const isDraft = page.publishStatus !== "published";
   const title = ar ? (page.titleAr || page.title) : page.title;
   const heroTitle = ar ? (page.heroTitleAr || page.heroTitle || title) : (page.heroTitle || title);

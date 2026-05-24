@@ -1061,6 +1061,7 @@ export type CmsPage = {
   bodyCode: string;
   visibility: string;
   publishStatus: string;
+  renderMode?: "cms" | "html";
   seoTitle?: string; seoDescription?: string; seoKeywords?: string; ogImage?: string;
   headCode?: string;
   showInNav?: boolean; showInMenu?: boolean; showInFooter?: boolean;
@@ -1089,6 +1090,7 @@ function rowToPage(r: Record<string, unknown>): CmsPage {
     seoKeywords:   r.seoKeywords as string ?? "",
     ogImage:       r.ogImage as string ?? "",
     headCode:      r.headCode as string ?? "",
+    renderMode:    (r.renderMode as "cms" | "html") ?? "cms",
     showInNav:     r.showInNav as boolean ?? false,
     showInMenu:    r.showInMenu as boolean ?? false,
     showInFooter:  r.showInFooter as boolean ?? false,
@@ -1137,6 +1139,7 @@ export async function createAdminPage(data: Partial<CmsPage>): Promise<CmsPage> 
     seoKeywords:   data.seoKeywords ?? "",
     ogImage:       data.ogImage ?? "",
     headCode:      data.headCode ?? "",
+    renderMode:    data.renderMode ?? "cms",
     showInNav:     data.showInNav ?? false,
     showInMenu:    data.showInMenu ?? false,
     showInFooter:  data.showInFooter ?? false,
@@ -1165,6 +1168,7 @@ export async function updateAdminPage(id: string, data: Partial<CmsPage>): Promi
   if (data.seoKeywords   !== undefined) body.seoKeywords   = data.seoKeywords;
   if (data.ogImage       !== undefined) body.ogImage       = data.ogImage;
   if (data.headCode      !== undefined) body.headCode      = data.headCode;
+  if (data.renderMode    !== undefined) body.renderMode    = data.renderMode;
   if (data.showInNav     !== undefined) body.showInNav     = data.showInNav;
   if (data.showInMenu    !== undefined) body.showInMenu    = data.showInMenu;
   if (data.showInFooter  !== undefined) body.showInFooter  = data.showInFooter;
