@@ -3,13 +3,14 @@
   publish   = "dist/client"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION  = "20"
+  VITE_API_BASE = ""
 
-# Proxy /api/* to the Replit backend — keeps the same origin so no CORS issues.
+# Proxy /api/* to the Replit backend server-side — same origin, no CORS.
 # Update this URL if you redeploy to a new Replit instance.
 [[redirects]]
   from   = "/api/*"
-  to     = "https://elite-osoulk-genesis--ajkdbawjkldb.replit.app/api/:splat"
+  to     = "https://elite-osoulk-genesis--omawobdnaoimnwb.replit.app/api/:splat"
   status = 200
   force  = true
 
