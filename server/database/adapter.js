@@ -112,6 +112,7 @@ const MAP = {
   "activity-log":     { file: "activity-log.json",      table: "activity_log",    type: "array"  },
   "email-queue":      { file: "email-queue.json",       table: "email_queue",     type: "array"  },
   "sections":         { file: "sections.json",          table: "sections",        type: "array"  },
+  "viewings":         { file: "viewings.json",          table: "viewings",        type: "array"  },
   "seo":                   { file: "seo.json",                  table: "kv_store", type: "object" },
   "views":                 { file: "views.json",                table: "property_views", type: "views" },
   "site-settings":         { file: "site-settings.json",        table: "kv_store", type: "object" },

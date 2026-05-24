@@ -16,6 +16,7 @@ const ARRAY_TABLES = [
   "activity_log",
   "email_queue",
   "sections",
+  "viewings",
 ];
 
 export async function ensurePgSchema() {
