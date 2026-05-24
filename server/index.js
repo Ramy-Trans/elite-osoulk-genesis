@@ -7,8 +7,15 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { createHash } from "crypto";
 import os from "os";
+import { createClient } from "@supabase/supabase-js";
+import ws from "ws";
 
-const supabaseAdmin = null;
+const supabaseAdmin = (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      realtime: { transport: ws },
+    })
+  : null;
 
 import db, {
   setDataDir,
