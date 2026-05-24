@@ -126,31 +126,14 @@ app.use((req, res, next) => {
 });
 
 // ─── Rate limiter ─────────────────────────────────────────────────────────────
-// Disabled in development — Replit's reverse proxy routes all traffic through
-// the same IP, causing every client to share a single bucket and hit limits
-// almost immediately. Rate limiting is only meaningful in production where
-// real per-client IPs are available via X-Forwarded-For.
-const IS_DEV = process.env.NODE_ENV !== "production";
-const _rlMap = new Map();
-function rateLimit(windowMs, max) {
-  return (req, res, next) => {
-    if (IS_DEV) return next();
-    const key = (req.headers["x-forwarded-for"] || req.ip || "anon").split(",")[0].trim();
-    const now = Date.now();
-    let e = _rlMap.get(key);
-    if (!e || now > e.resetAt) e = { count: 0, resetAt: now + windowMs };
-    e.count++;
-    _rlMap.set(key, e);
-    if (e.count > max) return res.status(429).json({ message: "Too many requests. Please wait and try again." });
-    next();
-  };
-}
-const generalLimit = rateLimit(15 * 60 * 1000, 300);
-const authLimit   = rateLimit(15 * 60 * 1000, 15);
-app.use("/api/", generalLimit);
-app.use("/api/register",    authLimit);
-app.use("/api/login",       authLimit);
-app.use("/api/admin/login", authLimit);
+// NOTE: IP-based rate limiting is disabled for Replit deployments.
+// Replit's reverse proxy (both dev and autoscale production) routes all user
+// traffic through the same pool of proxy IPs, so every visitor shares one
+// bucket — even 2-3 users registering simultaneously triggers a 429.
+// DDoS / abuse protection is handled at the Replit platform level.
+// To re-enable, replace with a session- or user-ID-based limiter instead.
+const generalLimit = (_req, _res, next) => next();
+const authLimit    = (_req, _res, next) => next();
 
 const PLAN_LIMITS = { free: 1, basic: 3, standard: 5, broker: 10, elite: 20 };
 
