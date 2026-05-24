@@ -126,9 +126,15 @@ app.use((req, res, next) => {
 });
 
 // ─── Rate limiter ─────────────────────────────────────────────────────────────
+// Disabled in development — Replit's reverse proxy routes all traffic through
+// the same IP, causing every client to share a single bucket and hit limits
+// almost immediately. Rate limiting is only meaningful in production where
+// real per-client IPs are available via X-Forwarded-For.
+const IS_DEV = process.env.NODE_ENV !== "production";
 const _rlMap = new Map();
 function rateLimit(windowMs, max) {
   return (req, res, next) => {
+    if (IS_DEV) return next();
     const key = (req.headers["x-forwarded-for"] || req.ip || "anon").split(",")[0].trim();
     const now = Date.now();
     let e = _rlMap.get(key);
@@ -139,8 +145,8 @@ function rateLimit(windowMs, max) {
     next();
   };
 }
-const generalLimit = rateLimit(15 * 60 * 1000, 2000);
-const authLimit   = rateLimit(15 * 60 * 1000, 50);
+const generalLimit = rateLimit(15 * 60 * 1000, 300);
+const authLimit   = rateLimit(15 * 60 * 1000, 15);
 app.use("/api/", generalLimit);
 app.use("/api/register",    authLimit);
 app.use("/api/login",       authLimit);
