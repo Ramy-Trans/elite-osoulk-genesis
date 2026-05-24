@@ -43,12 +43,20 @@ function CmsPageRoute() {
   const page = Route.useLoaderData() as CmsPage;
   const ar = lang === "ar";
 
+  const isDraft = page.publishStatus !== "published";
   const title = ar ? (page.titleAr || page.title) : page.title;
   const heroTitle = ar ? (page.heroTitleAr || page.heroTitle || title) : (page.heroTitle || title);
   const content = ar ? (page.contentAr || page.content) : page.content;
 
   return (
     <div className="min-h-screen bg-background">
+      {isDraft && (
+        <div className="sticky top-0 z-50 flex items-center justify-center gap-2 bg-amber-400 px-4 py-2 text-center text-sm font-black text-amber-950">
+          <span>⚠</span>
+          <span>{ar ? "معاينة مسودة — هذه الصفحة غير منشورة بعد ولا يراها الزوار" : "Draft Preview — This page is not published yet and is not visible to visitors"}</span>
+        </div>
+      )}
+
       <PageHero
         kicker=""
         title={heroTitle}
