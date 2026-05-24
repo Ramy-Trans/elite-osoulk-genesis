@@ -139,8 +139,8 @@ function rateLimit(windowMs, max) {
     next();
   };
 }
-const generalLimit = rateLimit(15 * 60 * 1000, 300);
-const authLimit   = rateLimit(15 * 60 * 1000, 15);
+const generalLimit = rateLimit(15 * 60 * 1000, 2000);
+const authLimit   = rateLimit(15 * 60 * 1000, 50);
 app.use("/api/", generalLimit);
 app.use("/api/register",    authLimit);
 app.use("/api/login",       authLimit);
