@@ -7,15 +7,8 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { createHash } from "crypto";
 import os from "os";
-import { createClient } from "@supabase/supabase-js";
-import ws from "ws";
 
-const supabaseAdmin = (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
-  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-      realtime: { transport: ws },
-    })
-  : null;
+const supabaseAdmin = null;
 
 import db, {
   setDataDir,
@@ -547,16 +540,7 @@ app.post("/api/reset-password", async (req, res) => {
     if (!newPassword) return res.status(400).json({ message: "كلمة المرور الجديدة مطلوبة." });
     if (newPassword.length < 6) return res.status(400).json({ message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل." });
 
-    // ── Supabase: update password using access token from the email link ────
-    if (supabaseAdmin && token) {
-      const userClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, {
-        auth: { autoRefreshToken: false, persistSession: false },
-        realtime: { transport: ws },
-      });
-      const { error } = await userClient.auth.updateUser({ password: newPassword });
-      if (error) return res.status(400).json({ message: error.message });
-      return res.json({ message: "تم تحديث كلمة المرور بنجاح. يمكنك تسجيل الدخول الآن." });
-    }
+    // ── Supabase auth removed — use local token flow only ────────────────────
 
     // ── Fallback ────────────────────────────────────────────────────────────
     if (!token) return res.status(400).json({ message: "الرمز وكلمة المرور الجديدة مطلوبان." });
