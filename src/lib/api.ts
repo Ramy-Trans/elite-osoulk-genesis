@@ -1109,9 +1109,7 @@ export async function getPublicPage(slug: string): Promise<CmsPage | null> {
   try {
     const data = await apiFetch<Record<string,unknown>>("GET", `/api/pages/${encodeURIComponent(slug)}`);
     if (!data) return null;
-    const page = rowToPage(data);
-    if (page.publishStatus !== "published") return null;
-    return page;
+    return rowToPage(data);
   } catch { return null; }
 }
 
