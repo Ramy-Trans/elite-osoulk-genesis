@@ -408,118 +408,82 @@ app.get("/api/subscribers", requireAdmin, async (_req, res) => {
 // ─── Register ─────────────────────────────────────────────────────────────────
 app.post("/api/register", async (req, res) => {
   try {
-    const {
-      fullName, email, phone = "", password,
-      role = "individual", company = "",
-    } = req.body ?? {};
-
-    if (!fullName || !email || !password)
-      return res.status(400).json({ ok: false, message: "Full name, email, and password are required." });
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      return res.status(400).json({ ok: false, message: "A valid email address is required." });
-    if (password.length < 6)
-      return res.status(400).json({ ok: false, message: "Password must be at least 6 characters." });
+    const { fullName, email, phone = "", password, role = "individual", company = "" } = req.body ?? {};
+    if (!fullName || !email || !password) return res.status(400).json({ message: "Full name, email, and password are required." });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ message: "A valid email is required." });
+    if (password.length < 6) return res.status(400).json({ message: "Password must be at least 6 characters." });
 
     const users = await db.getAll("users");
-    if (users.find(u => u.email.toLowerCase() === email.toLowerCase().trim()))
-      return res.status(409).json({ ok: false, message: "An account with this email already exists." });
-
+    if (users.find(u => u.email.toLowerCase() === email.toLowerCase()))
+      return res.status(409).json({ message: "An account with this email already exists." });
     const user = {
-      id:           randomUUID(),
-      fullName:     fullName.trim(),
-      email:        email.toLowerCase().trim(),
-      phone:        String(phone).trim(),
-      passwordHash: hashPwd(password),
-      plan:         "free",
-      role:         normalizeRole(role),
-      company:      String(company).trim(),
-      status:       "active",
-      createdAt:    new Date().toISOString(),
+      id: randomUUID(), fullName, email, phone,
+      passwordHash: hashPwd(password), plan: "free",
+      role: normalizeRole(role), company, status: "active",
+      createdAt: new Date().toISOString(),
     };
-
     await db.insert("users", user);
     const { passwordHash: _ph, ...safeUser } = user;
-    return res.status(201).json({ ok: true, message: "Account created successfully!", user: safeUser });
-  } catch (err) {
-    console.error("[register]", err.message);
-    return res.status(500).json({ ok: false, message: "Registration failed. Please try again." });
-  }
+    res.json({ message: "Account created successfully!", user: safeUser });
+  } catch (e) { res.status(500).json({ message: "Server error" }); }
 });
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body ?? {};
-    if (!email || !password)
-      return res.status(400).json({ ok: false, message: "Email and password are required." });
+    if (!email || !password) return res.status(400).json({ message: "Email and password are required." });
 
     const users = await db.getAll("users");
-    const user  = users.find(u => u.email.toLowerCase() === String(email).toLowerCase().trim());
-
+    const user = users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
     if (!user || user.passwordHash !== hashPwd(password))
-      return res.status(401).json({ ok: false, message: "Invalid email or password." });
-    if (user.status === "inactive")
-      return res.status(403).json({ ok: false, message: "This account has been deactivated. Contact support." });
-
+      return res.status(401).json({ message: "Invalid email or password." });
+    if (user.status === "inactive") return res.status(403).json({ message: "Account is deactivated." });
     const { passwordHash: _ph, ...safeUser } = user;
     await logActivity({ type: "Access", event: "Login", userId: user.id, userName: user.fullName });
-    return res.json({ ok: true, message: "Signed in successfully.", user: safeUser, token: user.id });
-  } catch (err) {
-    console.error("[login]", err.message);
-    return res.status(500).json({ ok: false, message: "Login failed. Please try again." });
-  }
+    res.json({ message: "Signed in successfully", user: safeUser, token: user.id });
+  } catch { res.status(500).json({ message: "Server error" }); }
 });
 
-// ─── Forgot Password ──────────────────────────────────────────────────────────
+// ─── Forgot / Reset Password ──────────────────────────────────────────────────
 app.post("/api/forgot-password", async (req, res) => {
   try {
     const { email } = req.body ?? {};
-    if (!email)
-      return res.status(400).json({ ok: false, message: "Email is required." });
+    if (!email) return res.status(400).json({ message: "البريد الإلكتروني مطلوب." });
 
     const users = await db.getAll("users");
-    const user  = users.find(u => u.email.toLowerCase() === String(email).toLowerCase().trim());
-    if (!user)
-      return res.status(404).json({ ok: false, message: "No account found with this email." });
-
+    const user = users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
+    if (!user) return res.status(404).json({ message: "لا يوجد حساب مرتبط بهذا البريد." });
     const token = Math.random().toString(36).slice(2, 8).toUpperCase();
-    user.resetToken       = token;
-    user.resetTokenExpiry = new Date(Date.now() + 3_600_000).toISOString();
+    user.resetToken = token;
+    user.resetTokenExpiry = new Date(Date.now() + 3600000).toISOString();
     await db.replaceAll("users", users);
     await logActivity({ type: "Access", event: "ForgotPassword", userId: user.id, userName: user.fullName });
-    return res.json({ ok: true, message: "Password reset token generated.", token });
-  } catch (err) {
-    console.error("[forgot-password]", err.message);
-    return res.status(500).json({ ok: false, message: "Failed to process request. Please try again." });
-  }
+    res.json({ message: "تم إنشاء رمز إعادة التعيين.", token });
+  } catch { res.status(500).json({ message: "Server error" }); }
 });
 
-// ─── Reset Password ───────────────────────────────────────────────────────────
 app.post("/api/reset-password", async (req, res) => {
   try {
     const { token, newPassword } = req.body ?? {};
-    if (!token || !newPassword)
-      return res.status(400).json({ ok: false, message: "Reset token and new password are required." });
-    if (newPassword.length < 6)
-      return res.status(400).json({ ok: false, message: "Password must be at least 6 characters." });
+    if (!newPassword) return res.status(400).json({ message: "كلمة المرور الجديدة مطلوبة." });
+    if (newPassword.length < 6) return res.status(400).json({ message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل." });
 
+    // ── Supabase auth removed — use local token flow only ────────────────────
+
+    // ── Fallback ────────────────────────────────────────────────────────────
+    if (!token) return res.status(400).json({ message: "الرمز وكلمة المرور الجديدة مطلوبان." });
     const users = await db.getAll("users");
-    const user  = users.find(u => u.resetToken === String(token).toUpperCase());
-    if (!user)
-      return res.status(400).json({ ok: false, message: "Invalid or expired reset token." });
+    const user = users.find(u => u.resetToken === String(token).toUpperCase());
+    if (!user) return res.status(400).json({ message: "الرمز غير صحيح أو منتهي الصلاحية." });
     if (new Date(user.resetTokenExpiry) < new Date())
-      return res.status(400).json({ ok: false, message: "Reset token has expired. Please request a new one." });
-
+      return res.status(400).json({ message: "انتهت صلاحية الرمز. يرجى طلب رمز جديد." });
     user.passwordHash = hashPwd(newPassword);
-    delete user.resetToken;
-    delete user.resetTokenExpiry;
+    delete user.resetToken; delete user.resetTokenExpiry;
     await db.replaceAll("users", users);
     await logActivity({ type: "Access", event: "PasswordReset", userId: user.id, userName: user.fullName });
-    return res.json({ ok: true, message: "Password updated successfully. You can now sign in." });
-  } catch (err) {
-    console.error("[reset-password]", err.message);
-    return res.status(500).json({ ok: false, message: "Failed to reset password. Please try again." });
-  }
+    res.json({ message: "تم تحديث كلمة المرور بنجاح. يمكنك تسجيل الدخول الآن." });
+  } catch { res.status(500).json({ message: "Server error" }); }
 });
 
 // ─── Me ───────────────────────────────────────────────────────────────────────

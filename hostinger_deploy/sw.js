@@ -1,10 +1,10 @@
 const CACHE = "osoulk-v6";
-const PRECACHE = ["/manifest.json", "/favicon.ico"];
+const STATIC = ["/manifest.json", "/favicon.ico"];
 
 self.addEventListener("install", e => {
   e.waitUntil(
     caches.open(CACHE)
-      .then(c => c.addAll(PRECACHE).catch(() => {}))
+      .then(c => c.addAll(STATIC).catch(() => {}))
       .then(() => self.skipWaiting())
   );
 });
@@ -19,46 +19,57 @@ self.addEventListener("activate", e => {
 
 self.addEventListener("fetch", e => {
   const { request } = e;
-
-  if (request.method !== "GET") return;
-
-  if (request.url.includes("/api/")) return;
-
-  if (request.mode === "navigate") return;
-
   const url = new URL(request.url);
+
+  // Only handle same-origin GET requests
+  if (request.method !== "GET") return;
   if (url.origin !== self.location.origin) return;
 
-  const isHashedAsset = /[.-][a-f0-9]{8,}\.(js|css)(\?.*)?$/.test(url.pathname);
+  // Never intercept API, auth, or admin routes
+  if (
+    url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/admin") ||
+    url.pathname.includes("login") ||
+    url.pathname.includes("register")
+  ) return;
 
-  if (isHashedAsset) {
+  // Navigation requests — network-first, graceful offline fallback
+  if (request.mode === "navigate") {
     e.respondWith(
-      caches.match(request).then(cached => {
-        if (cached) return cached;
-        return fetch(request).then(res => {
-          if (!res || res.status !== 200 || res.type !== "basic") return res;
-          const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(request, clone)).catch(() => {});
+      fetch(request)
+        .then(res => {
+          // Cache a copy of successful navigation responses
+          if (res && res.status === 200 && res.type === "basic") {
+            caches.open(CACHE).then(c => c.put(request, res.clone())).catch(() => {});
+          }
           return res;
-        }).catch(() => new Response("", { status: 503 }));
-      })
+        })
+        .catch(() =>
+          caches.match(request).then(cached =>
+            cached || new Response("<h1>Offline</h1><p>Please check your connection.</p>", {
+              status: 503,
+              headers: { "Content-Type": "text/html" },
+            })
+          )
+        )
     );
     return;
   }
 
-  const isStaticAsset = /\.(woff2?|ttf|otf|png|jpg|jpeg|webp|gif|svg|ico)(\?.*)?$/.test(url.pathname);
-  if (!isStaticAsset) return;
-
-  e.respondWith((async () => {
-    const cached = await caches.match(request);
-    try {
-      const res = await fetch(request);
-      if (!res || res.status !== 200 || res.type !== "basic") return res || cached;
-      const clone = res.clone();
-      caches.open(CACHE).then(c => c.put(request, clone)).catch(() => {});
-      return res;
-    } catch {
-      return cached || new Response("", { status: 503 });
-    }
-  })());
+  // Static assets — network-first with cache fallback
+  e.respondWith(
+    fetch(request)
+      .then(res => {
+        if (!res || res.status !== 200 || res.type !== "basic") return res;
+        // Clone BEFORE the body is consumed — critical to avoid "already used" error
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(request, clone)).catch(() => {});
+        return res;
+      })
+      .catch(() =>
+        caches.match(request).then(cached =>
+          cached || new Response("", { status: 503, statusText: "Offline" })
+        )
+      )
+  );
 });
