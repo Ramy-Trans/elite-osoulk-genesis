@@ -32,7 +32,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "pkill -f 'node server/index.js' 2>/dev/null; pkill -f 'vite' 2>/dev/null; sleep 1; npm run dev"
 waitForPort = 5000
 
 [[workflows.workflow]]
