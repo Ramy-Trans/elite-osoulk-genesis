@@ -151,9 +151,12 @@ export function SignUpModal({ open, onClose, initialMode = "signup" }: Props) {
     e.preventDefault();
     setStatus("loading");
     try {
-      await forgotPassword(forgotEmail);
-      setStatus("success");
-      setMessage(t("forgot.emailSent") || "تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني. تفقّد صندوق الوارد وانقر على الرابط.");
+      const data = await forgotPassword(forgotEmail);
+      setGeneratedToken(data.token || "");
+      setResetToken(data.token || "");
+      setStatus("idle");
+      setMessage("");
+      setMode("reset");
     } catch (err: unknown) {
       setStatus("error");
       setMessage(err instanceof Error ? err.message : t("signup.error"));
@@ -163,8 +166,14 @@ export function SignUpModal({ open, onClose, initialMode = "signup" }: Props) {
   async function handleReset(e: React.FormEvent) {
     e.preventDefault();
     setStatus("loading");
+    const token = resetToken || generatedToken;
+    if (!token) {
+      setStatus("error");
+      setMessage("رمز إعادة التعيين مطلوب.");
+      return;
+    }
     try {
-      const data = await resetPassword("", newPassword);
+      const data = await resetPassword(token, newPassword);
       setMessage(data.message);
       setStatus("success");
     } catch (err: unknown) {
@@ -390,15 +399,27 @@ export function SignUpModal({ open, onClose, initialMode = "signup" }: Props) {
               </div>
             </div>
 
-            <p className="mb-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5 text-xs text-amber-800">
-              أنت تعيد تعيين كلمة مرور حسابك. أدخل كلمة مرور جديدة أدناه.
-            </p>
+            {generatedToken && (
+              <div className="mb-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs text-emerald-800">
+                <p className="font-bold mb-1">رمز إعادة التعيين الخاص بك:</p>
+                <p className="font-mono text-base tracking-widest font-black text-emerald-900">{generatedToken}</p>
+                <p className="mt-1 text-emerald-700">احتفظ بهذا الرمز — تم تعبئته تلقائياً أدناه.</p>
+              </div>
+            )}
+
             <form onSubmit={handleReset} className="space-y-3">
+              <input
+                required
+                className="h-11 w-full rounded-lg border bg-background px-4 text-sm font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-navy/20"
+                placeholder="رمز إعادة التعيين"
+                value={resetToken}
+                onChange={e => setResetToken(e.target.value.toUpperCase())}
+              />
               <div className="relative">
                 <input
                   type={showNewPwd ? "text" : "password"} required minLength={6}
                   className="h-11 w-full rounded-lg border bg-background px-4 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20"
-                  placeholder={t("reset.newPwdPlaceholder")}
+                  placeholder={t("reset.newPwdPlaceholder") || "كلمة المرور الجديدة"}
                   value={newPassword} onChange={e => setNewPassword(e.target.value)}
                 />
                 <button type="button" onClick={() => setShowNewPwd(v => !v)} className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-navy transition-colors">
@@ -416,7 +437,7 @@ export function SignUpModal({ open, onClose, initialMode = "signup" }: Props) {
             </form>
 
             <div className="mt-4 flex items-center justify-center gap-3 text-sm">
-              <button onClick={() => switchMode("forgot")} className="font-bold text-navy hover:underline">{t("reset.requestNew")}</button>
+              <button onClick={() => switchMode("forgot")} className="font-bold text-navy hover:underline">{t("reset.requestNew") || "طلب رمز جديد"}</button>
               <span className="text-border">|</span>
               <button onClick={() => switchMode("signin")} className="font-bold text-navy hover:underline">{t("signin.btn")}</button>
             </div>
