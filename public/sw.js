@@ -1,4 +1,4 @@
-const CACHE = "osoulk-v6";
+const CACHE = "osoulk-v8";
 const CACHE_MAX_AGE = 10 * 60 * 1000;
 const PRECACHE = ["/manifest.json", "/favicon.ico"];
 
