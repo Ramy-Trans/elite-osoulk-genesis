@@ -75,6 +75,8 @@ run = ["node", "server/index.js"]
 
 [userenv.shared]
 NODE_ENV = "development"
+
+[userenv.development]
 PORT = "3001"
 
 [postMerge]
