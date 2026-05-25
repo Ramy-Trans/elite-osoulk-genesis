@@ -1,0 +1,1 @@
+import{bu as e,O as o}from"./index-DbgHH4Px.js";const t=()=>e.jsxDEV(o,{},void 0,!1,{fileName:"/home/runner/workspace/src/routes/pages.tsx?tsr-split=component",lineNumber:2,columnNumber:30},void 0);export{t as component};
