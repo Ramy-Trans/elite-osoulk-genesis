@@ -1,0 +1,248 @@
+# Replit Deployment + 429 Error Fix Prompt
+
+You are a senior production infrastructure engineer.
+
+The application works locally but fails after clicking “Publish” on Replit due to:
+
+* 429 Too Many Requests
+* rate limits
+* cold starts
+* duplicated requests
+* frontend request storms
+* serverless execution limits
+* broken environment variable handling
+* websocket overload
+* Supabase connection saturation
+* excessive polling
+* API concurrency spikes
+
+Your task is to fully refactor the application so it works reliably when deployed publicly on Replit at production scale.
+
+---
+
+# PRIMARY GOAL
+
+After clicking Publish on Replit:
+
+* the app must remain stable
+* requests must not fail under moderate/high traffic
+* APIs must recover automatically from 429s
+* the frontend must not spam requests
+* Supabase must not get overloaded
+* deployment must be production-safe
+
+---
+
+# REPLIT-SPECIFIC REQUIREMENTS
+
+## 1. Fix Replit Deployment Architecture
+
+Detect and fix:
+
+* server restarts
+* cold starts
+* memory overuse
+* blocking operations
+* infinite loops
+* repeated renders
+* duplicate API calls
+* bad websocket handling
+* recursive fetches
+* client-side request spam
+
+Ensure compatibility with:
+
+* Replit Autoscale
+* Replit Deployments
+* always-on production execution
+* environment secrets
+* public deployments
+
+---
+
+# 2. ELIMINATE 429 ERRORS
+
+Implement production-grade retry logic:
+
+* exponential backoff
+* retry jitter
+* request queueing
+* concurrency limiting
+* timeout handling
+* circuit breakers
+* duplicate request prevention
+
+Example:
+Retry delays:
+1s → 2s → 4s → 8s → 16s
+
+Max retries configurable.
+
+Prevent retry storms.
+
+Never retry infinitely.
+
+---
+
+# 3. ADD GLOBAL REQUEST MANAGEMENT
+
+Build a centralized request manager that:
+
+* deduplicates identical requests
+* batches requests
+* throttles traffic
+* caches responses
+* prevents frontend spam
+* limits concurrent API calls
+
+Requirements:
+
+* max concurrent requests configurable
+* request cancellation support
+* AbortController support
+* queue overflow protection
+
+---
+
+# 4. FIX FRONTEND REQUEST SPAM
+
+Detect and eliminate:
+
+* duplicate useEffect calls
+* unnecessary rerenders
+* aggressive polling
+* repeated Supabase subscriptions
+* infinite fetch loops
+
+Add:
+
+* debounce
+* throttle
+* memoization
+* pagination
+* lazy loading
+* stale-while-revalidate caching
+* React Query or SWR
+
+---
+
+# 5. OPTIMIZE SUPABASE
+
+Refactor Supabase usage to prevent rate limits:
+
+* singleton client
+* connection reuse
+* query caching
+* indexed queries
+* pagination everywhere
+* avoid SELECT *
+* batch inserts/updates
+* optimize realtime listeners
+* reduce subscription count
+* edge functions where appropriate
+
+Never expose service_role keys to frontend code.
+
+Only use anon keys client-side.
+
+---
+
+# 6. ADD SERVER-SIDE CACHE
+
+Implement:
+
+* in-memory cache
+* Redis cache if supported
+* request dedupe cache
+* response cache
+* TTL invalidation
+* stale cache fallback
+
+Cache all expensive queries.
+
+---
+
+# 7. ADD RATE-LIMIT PROTECTION
+
+Protect backend from overload:
+
+* IP throttling
+* bot filtering
+* abuse prevention
+* queue overflow handling
+* request validation
+
+Gracefully degrade under load instead of crashing.
+
+---
+
+# 8. MONITORING + DEBUGGING
+
+Add:
+
+* structured logs
+* request tracing
+* error tracking
+* retry metrics
+* slow query logs
+* deployment diagnostics
+
+Log:
+
+* why 429 happens
+* which endpoint causes it
+* concurrency spikes
+* request volume
+* memory usage
+
+---
+
+# 9. REPLIT PRODUCTION HARDENING
+
+Ensure:
+
+* all env vars load correctly
+* no secrets leak client-side
+* deployment builds cleanly
+* startup scripts work
+* production mode enabled
+* server binds correctly
+* health checks pass
+
+Verify:
+
+* npm run build
+* npm run start
+* deployment entrypoint
+* port configuration
+* Replit autoscale compatibility
+
+---
+
+# 10. DELIVERABLES
+
+Provide:
+
+1. fully refactored code
+2. scalable architecture
+3. retry middleware
+4. queue manager
+5. caching layer
+6. deployment fixes
+7. performance report
+8. bottleneck analysis
+9. Replit deployment instructions
+10. load testing scripts
+
+---
+
+# FINAL OBJECTIVE
+
+Make the app production-ready for Replit publishing so that:
+
+* published deployments stay stable
+* 429 errors become extremely rare
+* traffic spikes do not crash the app
+* Supabase usage remains efficient
+* the app scales cleanly
+* all deployment issues are automatically handled

@@ -10,7 +10,9 @@ import { createHash } from "crypto";
 import os from "os";
 
 import { rateLimiter, strictRateLimiter } from "./middleware/ratelimit.js";
-import { cache, bustCache, bustCachePrefix } from "./middleware/cache.js";
+import { cache, bustCache, bustCachePrefix, getCacheSize } from "./middleware/cache.js";
+import { concurrencyLimiter, getActiveCount } from "./middleware/concurrency.js";
+import { requestLogger } from "./middleware/request-logger.js";
 
 import db, {
   setDataDir,
@@ -87,7 +89,9 @@ const app = express();
 app.use(compression());
 app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] }));
 app.use(express.json({ limit: "5mb" }));
+app.use(requestLogger);
 app.use(rateLimiter);
+app.use(concurrencyLimiter);
 
 app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -1088,6 +1092,8 @@ app.patch("/api/admin/listings/:id/approve", requireAdmin, async (req, res) => {
       return res.status(400).json({ message: "Invalid status" });
     const updated = await db.updateOne("user-listings", req.params.id, { approvalStatus: status, updatedAt: new Date().toISOString() });
     if (!updated) return res.status(404).json({ message: "Not found" });
+    bustCache("/api/listings");
+    bustCache("/api/stats");
     res.json(updated);
   } catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -1418,5 +1424,19 @@ startServer().catch(err => {
   console.error("[server] Fatal startup error:", err);
   process.exit(1);
 });
+
+// ─── Graceful shutdown ────────────────────────────────────────────────────────
+// Replit sends SIGTERM before killing the process on restarts/deploys.
+// We drain open HTTP connections and close the PG pool cleanly.
+async function shutdown(signal) {
+  console.log(`[server] ${signal} received — shutting down gracefully…`);
+  try {
+    const pool = getPgPool();
+    if (pool) await pool.end();
+  } catch { /* ignore */ }
+  process.exit(0);
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT",  () => shutdown("SIGINT"));
 
 export default app;

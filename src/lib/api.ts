@@ -9,16 +9,65 @@ const API_BASE: string =
 const ADMIN_SESSION_KEY = "osoulk_admin_session";
 const USER_OBJ_KEY      = "osoulk_user_obj";
 
-// ─── In-flight request deduplication ─────────────────────────────────────────
-// Identical GET requests fired simultaneously share a single in-flight promise
-// instead of creating N parallel DB hits.
-const _inFlight = new Map<string, Promise<unknown>>();
-
 // ─── Exponential backoff helper ───────────────────────────────────────────────
 function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
 function shouldRetry(status: number) {
   return status === 429 || status === 502 || status === 503 || status === 504;
+}
+
+// ─── In-flight deduplication ──────────────────────────────────────────────────
+// Multiple components calling the same GET simultaneously share one fetch.
+const _inFlight = new Map<string, Promise<unknown>>();
+
+// ─── Stale-while-revalidate client cache ─────────────────────────────────────
+// GET responses are cached in memory for SWR_TTL ms.  The cached value is
+// returned immediately; a background refetch updates it for the next call.
+const SWR_TTL = 20_000; // 20 s
+interface SwrEntry { data: unknown; expiresAt: number }
+const _swrCache = new Map<string, SwrEntry>();
+
+function swrGet<T>(key: string): T | null {
+  const e = _swrCache.get(key);
+  return (e && Date.now() < e.expiresAt) ? (e.data as T) : null;
+}
+function swrSet(key: string, data: unknown) {
+  _swrCache.set(key, { data, expiresAt: Date.now() + SWR_TTL });
+}
+
+// ─── Global concurrency limiter ───────────────────────────────────────────────
+// Caps simultaneous outbound fetch calls to prevent browser connection limits
+// and coordinated request storms from hammering the API on page load.
+const MAX_CONCURRENT = 8;
+let _activeCount = 0;
+const _queue: Array<() => void> = [];
+
+function acquireSlot(): Promise<void> {
+  if (_activeCount < MAX_CONCURRENT) {
+    _activeCount++;
+    return Promise.resolve();
+  }
+  return new Promise(resolve => {
+    if (_queue.length > 40) {
+      resolve(); // queue overflow: let it through rather than drop
+    } else {
+      _queue.push(resolve);
+    }
+  });
+}
+
+function releaseSlot() {
+  _activeCount = Math.max(0, _activeCount - 1);
+  const next = _queue.shift();
+  if (next) { _activeCount++; next(); }
+}
+
+// ─── AbortController helper ───────────────────────────────────────────────────
+// Usage in a component:
+//   const ac = makeAbortController();
+//   useEffect(() => { fetchSomething(ac.signal); return ac.abort; }, []);
+export function makeAbortController(): AbortController {
+  return new AbortController();
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -42,33 +91,61 @@ async function apiFetch<T>(
   body?: unknown,
   headers?: Record<string, string>,
   _maxRetries = 3,
+  signal?: AbortSignal,
 ): Promise<T> {
-  const isGet = method === "GET";
+  const isGet    = method === "GET";
+  const swrKey   = isGet ? path : null;
   const dedupKey = isGet ? `${method}:${path}` : null;
 
+  // SWR: return stale immediately, background-refresh without blocking
+  if (swrKey) {
+    const cached = swrGet<T>(swrKey);
+    if (cached !== null) {
+      // Kick off a background refresh if the in-flight map is clear
+      if (!_inFlight.has(dedupKey!)) {
+        const bg = apiFetch<T>(method, path, body, headers, 1, signal)
+          .then(fresh => { swrSet(swrKey, fresh); })
+          .catch(() => { /* silent — stale stays valid */ });
+        void bg;
+      }
+      return cached;
+    }
+  }
+
+  // Dedup: share an existing in-flight promise for the same GET
   if (dedupKey && _inFlight.has(dedupKey)) {
     return _inFlight.get(dedupKey) as Promise<T>;
   }
 
   async function attempt(retriesLeft: number, delayMs: number): Promise<T> {
-    const res = await fetch(API_BASE + path, {
-      method,
-      headers: headers ?? { "Content-Type": "application/json" },
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-    });
+    await acquireSlot();
+    try {
+      const res = await fetch(API_BASE + path, {
+        method,
+        headers: headers ?? { "Content-Type": "application/json" },
+        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+        ...(signal ? { signal } : {}),
+      });
 
-    if (!res.ok) {
-      if (retriesLeft > 0 && shouldRetry(res.status)) {
-        const retryAfter = res.headers.get("Retry-After");
-        const wait = retryAfter ? Number(retryAfter) * 1000 : delayMs + Math.random() * 200;
-        await sleep(wait);
-        return attempt(retriesLeft - 1, delayMs * 2);
+      if (!res.ok) {
+        if (retriesLeft > 0 && shouldRetry(res.status)) {
+          const retryAfter = res.headers.get("Retry-After");
+          const wait = retryAfter
+            ? Number(retryAfter) * 1000
+            : delayMs + Math.random() * 300;
+          await sleep(wait);
+          return attempt(retriesLeft - 1, Math.min(delayMs * 2, 16_000));
+        }
+        const err = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error((err as Record<string, string>).message || `HTTP ${res.status}`);
       }
-      const err = await res.json().catch(() => ({ message: res.statusText }));
-      throw new Error((err as Record<string, string>).message || `HTTP ${res.status}`);
-    }
 
-    return res.json() as Promise<T>;
+      const data = await res.json() as T;
+      if (swrKey) swrSet(swrKey, data);
+      return data;
+    } finally {
+      releaseSlot();
+    }
   }
 
   const promise = attempt(_maxRetries, 1000).finally(() => {
