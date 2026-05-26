@@ -13,7 +13,7 @@
 # API requests → Netlify Function (Express API runs serverless here)
 [[redirects]]
   from   = "/api/*"
-  to     = "/.netlify/functions/api"
+  to     = "/.netlify/functions/api/:splat"
   status = 200
   force  = true
 
