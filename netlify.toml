@@ -7,8 +7,7 @@
   VITE_API_BASE = ""
 
 [functions]
-  node_bundler           = "esbuild"
-  external_node_modules  = ["pg", "pg-native", "mysql2"]
+  node_bundler = "nft"
 
 # API requests → Netlify Function (Express API runs serverless here)
 [[redirects]]
