@@ -1,4 +1,4 @@
-const CACHE = "osoulk-v8";
+const CACHE = "osoulk-v9";
 const CACHE_MAX_AGE = 10 * 60 * 1000;
 const PRECACHE = ["/manifest.json", "/favicon.ico"];
 
@@ -31,13 +31,16 @@ self.addEventListener("fetch", e => {
     url.pathname.startsWith("/api/") ||
     url.pathname.startsWith("/admin") ||
     url.pathname.includes("login") ||
-    url.pathname.includes("register")
+    url.pathname.includes("register") ||
+    url.pathname.includes("signup")
   ) return;
 
   // Navigation requests (page loads) — network-first, fallback to cache
   if (request.mode === "navigate") {
     e.respondWith(
-      fetch(request).catch(() => caches.match(request).then(cached => cached || fetch(request)))
+      fetch(request).catch(() =>
+        caches.match(request).then(cached => cached || caches.match("/"))
+      )
     );
     return;
   }
@@ -53,8 +56,8 @@ self.addEventListener("fetch", e => {
         if (cached) return cached;
         return fetch(request).then(res => {
           if (!res || res.status !== 200 || res.type !== "basic") return res;
-          const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(request, clone)).catch(() => {});
+          const toCache = res.clone();
+          caches.open(CACHE).then(c => c.put(request, toCache)).catch(() => {});
           return res;
         });
       }).catch(() => fetch(request))
@@ -76,9 +79,10 @@ self.addEventListener("fetch", e => {
           const headers = new Headers(res.headers);
           headers.set("X-Cache-Timestamp", String(Date.now()));
           const body = await res.arrayBuffer();
-          const stamped = new Response(body, { status: res.status, statusText: res.statusText, headers });
-          cache.put(request, stamped.clone()).catch(() => {});
-          return stamped;
+          const toReturn = new Response(body, { status: res.status, statusText: res.statusText, headers });
+          const toCache = new Response(body.slice(0), { status: res.status, statusText: res.statusText, headers });
+          cache.put(request, toCache).catch(() => {});
+          return toReturn;
         }
         return res;
       } catch {
