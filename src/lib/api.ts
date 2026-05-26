@@ -3,8 +3,12 @@
 // On Hostinger: set VITE_API_BASE=https://your-repl.replit.app at build time
 //   → all calls become https://your-repl.replit.app/api/*
 // Admin auth: X-Admin-Key header. User auth: X-User-Id header.
+// Always resolve to the exact origin the page was served from so API calls
+// never get routed to a different autoscale replica.  An explicit
+// VITE_API_BASE env var can still override this at build time if needed.
 const API_BASE: string =
-  (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_BASE) || "";
+  (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_BASE) ||
+  (typeof window !== "undefined" ? window.location.origin : "");
 
 const ADMIN_SESSION_KEY = "osoulk_admin_session";
 const USER_OBJ_KEY      = "osoulk_user_obj";
