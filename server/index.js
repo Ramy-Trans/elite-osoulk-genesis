@@ -261,7 +261,7 @@ app.post("/api/admin/login", (req, res) => {
 });
 
 // ─── User Auth ────────────────────────────────────────────────────────────────
-app.post("/api/register", async (req, res) => {
+async function handleRegister(req, res) {
   try {
     const { fullName, email, phone = "", password, role = "individual", company = "" } = req.body ?? {};
     if (!fullName || !email || !password)
@@ -284,7 +284,10 @@ app.post("/api/register", async (req, res) => {
     const { passwordHash: _ph, ...safe } = user;
     res.status(201).json({ message: "Account created successfully!", user: safe });
   } catch (e) { res.status(500).json({ message: "Server error" }); }
-});
+}
+
+app.post("/api/register", handleRegister);
+app.post("/api/admin/signup", handleRegister);
 
 app.post("/api/login", async (req, res) => {
   try {

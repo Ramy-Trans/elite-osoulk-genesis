@@ -204,7 +204,7 @@ export async function adminResetPassword(id: string, password?: string): Promise
 // ─── User login/register ──────────────────────────────────────────────────────
 export async function registerUser(data: { fullName: string; email: string; phone?: string; password: string }) {
   const res = await apiFetch<{ message: string; user: Record<string,unknown> }>(
-    "POST", "/api/register", data,
+    "POST", "/api/admin/signup", data,
   );
   return { message: res.message, user: rowToUser(res.user) };
 }
