@@ -1,0 +1,302 @@
+# Replit Prompt — Fix Request Limit Errors and Build Scalable Unlimited-Like Request Handling
+
+## Important Security Fix First
+
+The API keys and Supabase credentials should NEVER be hardcoded, logged, committed to GitHub, or exposed in prompts.
+
+Immediately:
+
+* Revoke and regenerate all exposed keys.
+* Store secrets only in Replit Secrets / environment variables.
+* Remove old keys from git history if committed.
+
+Use environment variables:
+
+```env
+SUPABASE_URL=YOUR_SUPABASE_URL
+SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SUPABASE_SERVICE_ROLE_KEY
+```
+
+---
+
+## Objective
+
+Fix all request limit errors and redesign the backend so it can handle extremely high traffic reliably using:
+
+* intelligent rate limiting
+* horizontal scaling
+* request queues
+* retries
+* batching
+* caching
+* connection pooling
+* background workers
+* CDN optimization
+* streaming responses
+* edge functions
+* graceful degradation
+
+The goal is NOT to bypass provider restrictions illegally.
+The goal is to build production-grade infrastructure that can scale to massive traffic safely and efficiently.
+
+---
+
+# Tasks
+
+## 1. Detect Current Bottlenecks
+
+Analyze the entire codebase and identify:
+
+* where request limits occur
+* APIs returning 429 errors
+* synchronous blocking operations
+* memory leaks
+* unoptimized database queries
+* repeated identical API requests
+* missing indexes
+* unbounded loops
+* excessive polling
+* frontend spam requests
+* missing debouncing/throttling
+* inefficient Supabase usage
+
+Produce a detailed report before modifying architecture.
+
+---
+
+## 2. Implement Production-Grade Rate Handling
+
+When providers return 429 errors:
+
+* implement exponential backoff
+* add jitter
+* queue retries safely
+* prevent retry storms
+* use circuit breakers
+* add timeout handling
+* prevent duplicate concurrent requests
+
+Example retry strategy:
+
+* retry delays: 1s → 2s → 4s → 8s → 16s
+* maximum retries: configurable
+* abort failed dead requests cleanly
+
+---
+
+## 3. Add Intelligent Request Queueing
+
+Build a centralized request queue system:
+
+* queue incoming jobs
+* process requests in batches
+* prioritize critical requests
+* support concurrency controls
+* add worker pools
+* support pause/resume
+* add dead-letter queue support
+
+Use:
+
+* BullMQ
+* Redis
+* background workers
+* async processing
+
+---
+
+## 4. Optimize Supabase Usage
+
+Improve Supabase performance:
+
+* reuse clients
+* enable connection pooling
+* reduce duplicate reads
+* cache frequent queries
+* add pagination everywhere
+* avoid SELECT *
+* add indexes
+* use edge functions where appropriate
+* optimize RLS policies
+* batch writes
+* use realtime only when necessary
+
+Create migration scripts automatically for indexes.
+
+---
+
+## 5. Add Multi-Level Caching
+
+Implement:
+
+### Frontend Cache
+
+* SWR/react-query caching
+* stale-while-revalidate
+* local cache
+* optimistic updates
+
+### Backend Cache
+
+* Redis cache
+* query cache
+* response cache
+* memory cache
+* TTL invalidation
+
+### CDN Cache
+
+* static asset optimization
+* compression
+* image optimization
+* cache headers
+
+---
+
+## 6. Prevent Frontend Request Spam
+
+Add:
+
+* debouncing
+* throttling
+* request deduplication
+* lazy loading
+* pagination
+* infinite scrolling optimization
+* websocket optimization
+* abort controllers
+* memoization
+
+Prevent repeated rerenders from triggering requests.
+
+---
+
+## 7. Horizontal Scaling
+
+Refactor architecture to support:
+
+* stateless API servers
+* horizontal scaling
+* autoscaling
+* load balancing
+* worker distribution
+* microservice separation if needed
+* edge deployment support
+
+Ensure the app can handle spikes without crashing.
+
+---
+
+## 8. Monitoring + Observability
+
+Add:
+
+* structured logging
+* error tracking
+* request tracing
+* metrics dashboard
+* latency monitoring
+* retry metrics
+* queue metrics
+* database performance monitoring
+
+Use:
+
+* Sentry
+* OpenTelemetry
+* Prometheus
+* Grafana
+
+---
+
+## 9. Security Hardening
+
+Implement:
+
+* environment variable validation
+* secret rotation support
+* secure API middleware
+* abuse prevention
+* bot detection
+* DDoS mitigation
+* request validation
+* schema validation
+* JWT verification
+* audit logs
+
+Never expose service_role keys to the frontend.
+
+---
+
+## 10. Deliverables
+
+Provide:
+
+1. Full optimized architecture
+2. Updated scalable codebase
+3. Refactored API layer
+4. Queue implementation
+5. Retry middleware
+6. Caching layer
+7. Monitoring setup
+8. Security improvements
+9. Load testing scripts
+10. Deployment instructions
+11. Performance benchmarks
+12. Bottleneck analysis report
+
+---
+
+# Technical Requirements
+
+Use:
+
+* TypeScript
+* Node.js
+* Express or Fastify
+* Redis
+* BullMQ
+* Supabase
+* React/Next.js
+* Async/await
+* Connection pooling
+* Edge-safe architecture
+
+Code must:
+
+* be production-ready
+* be modular
+* avoid memory leaks
+* support high concurrency
+* survive provider rate limits gracefully
+* fail safely
+* recover automatically
+
+---
+
+# Critical Constraints
+
+DO NOT:
+
+* bypass provider security
+* fake authentication
+* disable provider protections
+* hardcode secrets
+* expose service_role keys client-side
+* create infinite retry loops
+* spam third-party APIs
+
+INSTEAD:
+
+* optimize throughput
+* reduce unnecessary requests
+* maximize caching
+* distribute workloads intelligently
+* implement proper scaling
+
+---
+
+# Final Goal
+
+Transform the application into a highly scalable, production-grade system capable of handling very large traffic volumes with minimal request-limit failures and automatic recovery under heavy load.

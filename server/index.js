@@ -1,12 +1,16 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import { existsSync, mkdirSync, writeFileSync, readdirSync, copyFileSync } from "fs";
 import { randomUUID } from "crypto";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { createHash } from "crypto";
 import os from "os";
+
+import { rateLimiter, strictRateLimiter } from "./middleware/ratelimit.js";
+import { cache, bustCache, bustCachePrefix } from "./middleware/cache.js";
 
 import db, {
   setDataDir,
@@ -80,8 +84,10 @@ function invalidateUserCache(id) { if (id) _userCache.delete(id); else _userCach
 
 // ─── Express setup ────────────────────────────────────────────────────────────
 const app = express();
+app.use(compression());
 app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] }));
 app.use(express.json({ limit: "5mb" }));
+app.use(rateLimiter);
 
 app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -156,7 +162,7 @@ app.get("/api/health", async (_req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-app.get("/api/stats", async (_req, res) => {
+app.get("/api/stats", cache(30), async (_req, res) => {
   try {
     const results = await Promise.allSettled([
       db.getAll("subscribers"), db.getAll("users"), db.getAll("reel-requests"),
@@ -203,7 +209,7 @@ app.post("/api/subscribe", async (req, res) => {
 });
 
 // ─── Admin Auth ───────────────────────────────────────────────────────────────
-app.post("/api/admin/login", (req, res) => {
+app.post("/api/admin/login", strictRateLimiter, (req, res) => {
   try {
     const { password } = req.body ?? {};
     if (!password) return res.status(400).json({ ok: false, message: "Password is required." });
@@ -243,10 +249,10 @@ async function handleRegister(req, res) {
   }
 }
 
-app.post("/api/register", handleRegister);
-app.post("/api/admin/signup", handleRegister);
+app.post("/api/register", strictRateLimiter, handleRegister);
+app.post("/api/admin/signup", strictRateLimiter, handleRegister);
 
-app.post("/api/login", async (req, res) => {
+app.post("/api/login", strictRateLimiter, async (req, res) => {
   try {
     const { email, password } = req.body ?? {};
     if (!email || !password)
@@ -627,7 +633,7 @@ app.put("/api/me/alert-settings", requireUser, async (req, res) => {
 });
 
 // ─── Public Listings ──────────────────────────────────────────────────────────
-app.get("/api/listings", async (_req, res) => {
+app.get("/api/listings", cache(30), async (_req, res) => {
   try { res.json((await db.getAll("user-listings")).filter(l => l.approvalStatus === "approved")); }
   catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -673,7 +679,7 @@ const DEFAULT_SEO = {
   agencies: { title: "وكالات عقارية — أصولك", description: "تواصل مع أفضل وكالات العقارات في مصر.", keywords: "وكالات عقارية, وسطاء, مصر" },
   packages: { title: "باقات الإدراج — أصولك", description: "اختر الباقة المناسبة لظهورك العقاري.", keywords: "باقات, تسعير, إدراج عقاري" },
 };
-app.get("/api/seo", async (_req, res) => {
+app.get("/api/seo", cache(60), async (_req, res) => {
   try {
     const stored = await db.getObj("seo");
     const merged = {};
@@ -690,7 +696,7 @@ app.get("/api/seo/:page", async (req, res) => {
 });
 
 // ─── Public Projects ──────────────────────────────────────────────────────────
-app.get("/api/projects", async (_req, res) => {
+app.get("/api/projects", cache(60), async (_req, res) => {
   try {
     res.json((await db.getAll("public-projects"))
       .filter(p => !p.publishStatus || p.publishStatus === "published")
@@ -739,7 +745,7 @@ const DEFAULT_SETTINGS = {
   theme: { accent: "gold", primaryColor: "#061E46", secondaryColor: "#22c4b7", ctaColor: "#c9a227", navbarBg: "#ffffff", navbarText: "#061E46", footerBg: "#061E46", footerText: "#ffffff", cardBg: "#ffffff", inputBg: "#f4f5f6" },
   analytics: { gaTrackingId: "", enabled: false },
 };
-app.get("/api/site-settings", async (_req, res) => {
+app.get("/api/site-settings", cache(60), async (_req, res) => {
   try { res.json(deepMerge(DEFAULT_SETTINGS, await db.getObj("site-settings"))); }
   catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -763,7 +769,7 @@ async function getMergedSections() {
   const byId = Object.fromEntries(stored.map(s => [s.id, s]));
   return DEFAULT_SECTIONS.map(d => byId[d.id] ? { ...d, ...byId[d.id] } : d).sort((a, b) => a.order - b.order);
 }
-app.get("/api/sections", async (_req, res) => {
+app.get("/api/sections", cache(30), async (_req, res) => {
   try { res.json(await getMergedSections()); } catch { res.status(500).json({ message: "Server error" }); }
 });
 
@@ -784,12 +790,12 @@ app.get("/api/section-seo", async (_req, res) => {
   try { res.json(await db.getObj("section-seo")); } catch { res.status(500).json({ message: "Server error" }); }
 });
 
-app.get("/api/html-snippets", async (_req, res) => {
+app.get("/api/html-snippets", cache(60), async (_req, res) => {
   try { res.json((await db.getAll("html-snippets")).filter(s => s.enabled !== false)); }
   catch { res.status(500).json({ message: "Server error" }); }
 });
 
-app.get("/api/pages", async (_req, res) => {
+app.get("/api/pages", cache(60), async (_req, res) => {
   try { res.json((await db.getAll("pages")).filter(p => p.publishStatus === "published")); }
   catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -960,6 +966,7 @@ app.put("/api/seo/:page", requireAdmin, async (req, res) => {
     const stored = await db.getObj("seo");
     stored[req.params.page] = { ...(stored[req.params.page] || {}), ...req.body, updatedAt: new Date().toISOString() };
     await db.setObj("seo", stored);
+    bustCache("/api/seo");
     res.json(stored[req.params.page]);
   } catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -969,6 +976,7 @@ app.post("/api/seo", requireAdmin, async (req, res) => {
     if (!page) return res.status(400).json({ message: "page key required" });
     const stored = await db.getObj("seo");
     if (!stored[page]) { stored[page] = { title: "", description: "", keywords: "", updatedAt: new Date().toISOString() }; await db.setObj("seo", stored); }
+    bustCache("/api/seo");
     res.json(stored[page]);
   } catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -978,6 +986,7 @@ app.delete("/api/seo/:page", requireAdmin, async (req, res) => {
     const stored = await db.getObj("seo");
     delete stored[req.params.page];
     await db.setObj("seo", stored);
+    bustCache("/api/seo");
     res.json({ ok: true });
   } catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -988,6 +997,7 @@ app.put("/api/site-settings", requireAdmin, async (req, res) => {
     const merged = deepMerge(deepMerge(DEFAULT_SETTINGS, stored), req.body || {});
     merged.updatedAt = new Date().toISOString();
     await db.setObj("site-settings", merged);
+    bustCache("/api/site-settings");
     res.json(merged);
   } catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -1002,6 +1012,7 @@ app.put("/api/sections", requireAdmin, async (req, res) => {
     const byId = Object.fromEntries(stored.map(s => [s.id, s]));
     const valid = incoming.filter(s => s && typeof s.id === "string").map(s => ({ ...(byId[s.id] || {}), id: s.id, label: s.label || s.id, visible: !!s.visible, order: Number(s.order) || 0 }));
     await db.replaceAll("sections", valid);
+    bustCache("/api/sections");
     res.json(valid);
   } catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -1017,6 +1028,7 @@ app.patch("/api/admin/sections/:id", requireAdmin, async (req, res) => {
     for (const k of FIELDS) { if (req.body[k] !== undefined) updated[k] = req.body[k]; }
     byId[req.params.id] = updated;
     await db.replaceAll("sections", DEFAULT_SECTIONS.map(d => byId[d.id] ? { ...d, ...byId[d.id] } : d));
+    bustCache("/api/sections");
     res.json(updated);
   } catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -1099,6 +1111,7 @@ app.post("/api/admin/projects", requireAdmin, async (req, res) => {
     const slug = all.find(p => p.slug === rawSlug) ? `${rawSlug}-${Date.now()}` : rawSlug;
     const entry = { id: randomUUID(), slug, name: req.body.name || "", nameAr: req.body.nameAr || "", developerName: req.body.developerName || "", developerNameAr: req.body.developerNameAr || "", logoUrl: req.body.logoUrl || "", heroImage: req.body.heroImage || "", gallery: req.body.gallery || [], description: req.body.description || "", descriptionAr: req.body.descriptionAr || "", location: req.body.location || "", locationAr: req.body.locationAr || "", governorate: req.body.governorate || "", address: req.body.address || "", lat: req.body.lat || null, lng: req.body.lng || null, priceFrom: req.body.priceFrom || "", priceTo: req.body.priceTo || "", status: req.body.status || "under-construction", deliveryDate: req.body.deliveryDate || "", totalUnits: Number(req.body.totalUnits) || 0, availableUnits: Number(req.body.availableUnits) || 0, amenities: req.body.amenities || [], amenitiesAr: req.body.amenitiesAr || [], featured: !!req.body.featured, publishStatus: req.body.publishStatus || "published", order: Number(req.body.order) || all.length, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     await db.insert("public-projects", entry);
+    bustCache("/api/projects");
     res.json(entry);
   } catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -1111,12 +1124,16 @@ app.put("/api/admin/projects/:id", requireAdmin, async (req, res) => {
     for (const k of FIELDS) { if (req.body[k] !== undefined) all[idx][k] = req.body[k]; }
     all[idx].updatedAt = new Date().toISOString();
     await db.replaceAll("public-projects", all);
+    bustCache("/api/projects");
     res.json(all[idx]);
   } catch { res.status(500).json({ message: "Server error" }); }
 });
 app.delete("/api/admin/projects/:id", requireAdmin, async (req, res) => {
-  try { await db.replaceAll("public-projects", (await db.getAll("public-projects")).filter(p => p.id !== req.params.id)); res.json({ message: "Deleted" }); }
-  catch { res.status(500).json({ message: "Server error" }); }
+  try {
+    await db.replaceAll("public-projects", (await db.getAll("public-projects")).filter(p => p.id !== req.params.id));
+    bustCache("/api/projects");
+    res.json({ message: "Deleted" });
+  } catch { res.status(500).json({ message: "Server error" }); }
 });
 
 app.post("/api/articles", requireAdmin, async (req, res) => {
@@ -1181,6 +1198,7 @@ app.post("/api/admin/pages", requireAdmin, async (req, res) => {
     if (all.find(p => p.slug === rawSlug)) return res.status(409).json({ message: "A page with this slug already exists." });
     const entry = { id: randomUUID(), slug: rawSlug, title: req.body.title || "", titleAr: req.body.titleAr || "", heroImage: req.body.heroImage || "", heroTitle: req.body.heroTitle || "", heroTitleAr: req.body.heroTitleAr || "", content: req.body.content || "", contentAr: req.body.contentAr || "", publishStatus: req.body.publishStatus || "draft", renderMode: req.body.renderMode || "cms", seoTitle: req.body.seoTitle || "", seoDescription: req.body.seoDescription || "", seoKeywords: req.body.seoKeywords || "", ogImage: req.body.ogImage || "", headCode: req.body.headCode || "", bodyCode: req.body.bodyCode || "", showInNav: Boolean(req.body.showInNav), showInMenu: Boolean(req.body.showInMenu), showInFooter: Boolean(req.body.showInFooter), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     await db.insert("pages", entry);
+    bustCache("/api/pages");
     res.json(entry);
   } catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -1192,12 +1210,16 @@ app.put("/api/admin/pages/:id", requireAdmin, async (req, res) => {
     for (const k of ["slug", "title", "titleAr", "heroImage", "heroTitle", "heroTitleAr", "content", "contentAr", "publishStatus", "renderMode", "seoTitle", "seoDescription", "seoKeywords", "ogImage", "headCode", "bodyCode", "showInNav", "showInMenu", "showInFooter"]) { if (req.body[k] !== undefined) all[idx][k] = req.body[k]; }
     all[idx].updatedAt = new Date().toISOString();
     await db.replaceAll("pages", all);
+    bustCache("/api/pages");
     res.json(all[idx]);
   } catch { res.status(500).json({ message: "Server error" }); }
 });
 app.delete("/api/admin/pages/:id", requireAdmin, async (req, res) => {
-  try { await db.replaceAll("pages", (await db.getAll("pages")).filter(p => p.id !== req.params.id)); res.json({ message: "Deleted" }); }
-  catch { res.status(500).json({ message: "Server error" }); }
+  try {
+    await db.replaceAll("pages", (await db.getAll("pages")).filter(p => p.id !== req.params.id));
+    bustCache("/api/pages");
+    res.json({ message: "Deleted" });
+  } catch { res.status(500).json({ message: "Server error" }); }
 });
 
 app.get("/api/admin/viewings", requireAdmin, async (_req, res) => {
@@ -1227,6 +1249,7 @@ app.post("/api/admin/html-snippets", requireAdmin, async (req, res) => {
   try {
     const entry = { id: randomUUID(), name: req.body.name || "Snippet", html: req.body.html || "", placement: req.body.placement || "body-end", enabled: req.body.enabled !== false, createdAt: new Date().toISOString() };
     await db.insert("html-snippets", entry);
+    bustCache("/api/html-snippets");
     res.json(entry);
   } catch { res.status(500).json({ message: "Server error" }); }
 });
@@ -1237,12 +1260,16 @@ app.put("/api/admin/html-snippets/:id", requireAdmin, async (req, res) => {
     if (idx === -1) return res.status(404).json({ message: "Not found" });
     for (const k of ["name", "html", "placement", "enabled"]) { if (req.body[k] !== undefined) all[idx][k] = req.body[k]; }
     await db.replaceAll("html-snippets", all);
+    bustCache("/api/html-snippets");
     res.json(all[idx]);
   } catch { res.status(500).json({ message: "Server error" }); }
 });
 app.delete("/api/admin/html-snippets/:id", requireAdmin, async (req, res) => {
-  try { await db.replaceAll("html-snippets", (await db.getAll("html-snippets")).filter(s => s.id !== req.params.id)); res.json({ message: "Deleted" }); }
-  catch { res.status(500).json({ message: "Server error" }); }
+  try {
+    await db.replaceAll("html-snippets", (await db.getAll("html-snippets")).filter(s => s.id !== req.params.id));
+    bustCache("/api/html-snippets");
+    res.json({ message: "Deleted" });
+  } catch { res.status(500).json({ message: "Server error" }); }
 });
 
 app.post("/api/admin/upload-media", requireAdmin, (req, res) => {

@@ -9,6 +9,18 @@ const API_BASE: string =
 const ADMIN_SESSION_KEY = "osoulk_admin_session";
 const USER_OBJ_KEY      = "osoulk_user_obj";
 
+// ─── In-flight request deduplication ─────────────────────────────────────────
+// Identical GET requests fired simultaneously share a single in-flight promise
+// instead of creating N parallel DB hits.
+const _inFlight = new Map<string, Promise<unknown>>();
+
+// ─── Exponential backoff helper ───────────────────────────────────────────────
+function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+function shouldRetry(status: number) {
+  return status === 429 || status === 502 || status === 503 || status === 504;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function adminHeaders(extra: Record<string, string> = {}): Record<string, string> {
   const key = getAdminKey();
@@ -25,20 +37,47 @@ function userHeaders(extra: Record<string, string> = {}): Record<string, string>
 }
 
 async function apiFetch<T>(
-  method: string, path: string,
+  method: string,
+  path: string,
   body?: unknown,
   headers?: Record<string, string>,
+  _maxRetries = 3,
 ): Promise<T> {
-  const res = await fetch(API_BASE + path, {
-    method,
-    headers: headers ?? { "Content-Type": "application/json" },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error((err as Record<string,string>).message || `HTTP ${res.status}`);
+  const isGet = method === "GET";
+  const dedupKey = isGet ? `${method}:${path}` : null;
+
+  if (dedupKey && _inFlight.has(dedupKey)) {
+    return _inFlight.get(dedupKey) as Promise<T>;
   }
-  return res.json() as Promise<T>;
+
+  async function attempt(retriesLeft: number, delayMs: number): Promise<T> {
+    const res = await fetch(API_BASE + path, {
+      method,
+      headers: headers ?? { "Content-Type": "application/json" },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    });
+
+    if (!res.ok) {
+      if (retriesLeft > 0 && shouldRetry(res.status)) {
+        const retryAfter = res.headers.get("Retry-After");
+        const wait = retryAfter ? Number(retryAfter) * 1000 : delayMs + Math.random() * 200;
+        await sleep(wait);
+        return attempt(retriesLeft - 1, delayMs * 2);
+      }
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error((err as Record<string, string>).message || `HTTP ${res.status}`);
+    }
+
+    return res.json() as Promise<T>;
+  }
+
+  const promise = attempt(_maxRetries, 1000).finally(() => {
+    if (dedupKey) _inFlight.delete(dedupKey);
+  });
+
+  if (dedupKey) _inFlight.set(dedupKey, promise);
+
+  return promise;
 }
 
 // Allow 4xx/5xx — parse body regardless (e.g. health returns 503 in JSON-file mode)
