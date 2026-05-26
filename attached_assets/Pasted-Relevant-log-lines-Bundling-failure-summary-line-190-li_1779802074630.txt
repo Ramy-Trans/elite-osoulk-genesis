@@ -1,0 +1,44 @@
+Relevant log lines
+
+Bundling failure summary: line 190–line 196.
+Esbuild complaint about top-level await: line 181.
+The two offending locations in server/index.js where top-level await is used: line 182-line 188 and repeated in the error block line 195-line 196.
+Error type and cause
+
+Error: "Top-level await is currently not supported with the 'cjs' output format" (esbuild bundling error).
+Cause: The function bundle includes code (server/index.js) that uses top-level await (e.g. const { createServer } = await import('vite') and const vite = await createViteServer(...)) at module top-level. Netlify's bundling step emits a CommonJS bundle (cjs) by default; top-level await is only supported in ESM. This typically happens when dev-only Vite server code (createViteServer) or other ESM-only code is imported into a Netlify function that is being bundled for production.
+Solution (concrete, actionable)
+
+Inspect which function is importing the dev-server code.
+Open netlify/functions/api.js and any files it imports. If it imports server/index.js (the file that contains the top-level await), remove that dev-only import.
+If you need to view the server file referenced in the logs, here's the file in your repo: https://github.com/Ramy-Trans/elite-osoulk-genesis/blob/main/server/index.js#L1400-L1420
+Preferred fix: stop including Vite dev-server or other code with top-level await in production functions.
+Replace the dev-only import with production-ready code (use the built server entrypoint or the adapter for your framework).
+If this is a SvelteKit/Vite project, use the production build output (dist/server or the adapter-netlify entry) instead of spinning up a Vite dev server inside a function.
+If you must keep dynamic importing, move awaits out of module top-level into an async initialization function called inside the function handler. Example change (move top-level await into handler):
+// bad: top-level await (causes esbuild cjs error)
+const { createServer: createViteServer } = await import('vite');
+const vite = await createViteServer({ server: { middlewareMode: true } });
+
+// good: lazy init inside handler
+let viteServerPromise;
+async function getViteServer() {
+  if (!viteServerPromise) {
+    viteServerPromise = import('vite')
+      .then(({ createServer }) => createServer({ server: { middlewareMode: true } }));
+  }
+  return viteServerPromise;
+}
+
+exports.handler = async (event, context) => {
+  const vite = await getViteServer();
+  // ...use vite in request handling...
+};
+The key is to avoid top-level await in module scope; performing dynamic import/initialization inside the request handler (or via a lazily-initialized promise) prevents esbuild from treating it as top-level await.
+Alternative: if that code is not needed in the function at all, remove it or change your function to use the production server entry (for example, import the prebuilt server handler from your build output rather than importing vite).
+Rebuild and redeploy.
+Notes and checks
+
+Verify that the file you intend to bundle is actually committed to the repo (e.g., the production server entry under dist or build) before changing imports.
+If you were thinking of changing bundling/output format instead of modifying code: you should avoid relying on forcing the bundler to emit ESM for functions; the safer and standard approach is to remove top-level await or move initialization into the handler so Netlify's bundling works reliably.
+If you want, tell me the contents of netlify/functions/api.js (or paste the import lines) and I will give an exact patch to remove the dev-only import and use the correct production entry.

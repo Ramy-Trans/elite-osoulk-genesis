@@ -1408,14 +1408,16 @@ if (!IS_SERVERLESS) {
     });
     console.log("[server] Serving production SPA from dist/client/");
   } else {
-    try {
-      const { createServer: createViteServer } = await import("vite");
-      const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
-      app.use(vite.middlewares);
-      console.log("[server] Vite dev middleware attached — frontend + API on the same port");
-    } catch (e) {
-      console.warn("[server] Could not attach Vite middleware:", e.message);
-    }
+    (async () => {
+      try {
+        const { createServer: createViteServer } = await import("vite");
+        const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
+        app.use(vite.middlewares);
+        console.log("[server] Vite dev middleware attached — frontend + API on the same port");
+      } catch (e) {
+        console.warn("[server] Could not attach Vite middleware:", e.message);
+      }
+    })();
   }
 }
 
