@@ -10,7 +10,7 @@
  */
 
 const WINDOW_MS   = 15 * 60 * 1000;
-const DEFAULT_MAX = 300;
+const DEFAULT_MAX = 500;
 const STRICT_MAX  = 60;
 
 const _store = new Map();

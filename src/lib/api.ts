@@ -16,11 +16,11 @@ const USER_OBJ_KEY      = "osoulk_user_obj";
 // ─── Exponential backoff helper ───────────────────────────────────────────────
 function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
-function shouldRetry(status: number, method: string) {
-  // Never auto-retry 429 on non-idempotent methods (POST/PATCH/DELETE):
-  // retrying a rate-limited auth call burns more rate-limit slots and causes
-  // a cascade.  Only GET requests are safe to retry on 429.
-  if (status === 429) return method === "GET";
+function shouldRetry(status: number, _method: string) {
+  // Never retry 429 — the rate-limit quota is already exhausted; retrying
+  // immediately burns another slot and makes the problem worse.  Let the
+  // caller surface the error so the user can slow down or wait.
+  // Only retry transient gateway / server errors.
   return status === 502 || status === 503 || status === 504;
 }
 
@@ -31,7 +31,7 @@ const _inFlight = new Map<string, Promise<unknown>>();
 // ─── Stale-while-revalidate client cache ─────────────────────────────────────
 // GET responses are cached in memory for SWR_TTL ms.  The cached value is
 // returned immediately; a background refetch updates it for the next call.
-const SWR_TTL = 20_000; // 20 s
+const SWR_TTL = 60_000; // 60 s — longer TTL reduces real-fetch frequency
 interface SwrEntry { data: unknown; expiresAt: number }
 const _swrCache = new Map<string, SwrEntry>();
 
@@ -100,18 +100,24 @@ async function apiFetch<T>(
   headers?: Record<string, string>,
   _maxRetries = 3,
   signal?: AbortSignal,
+  _isBackground = false, // true → skip SWR cache-return/background-trigger (breaks the recursion)
 ): Promise<T> {
   const isGet    = method === "GET";
-  const swrKey   = isGet ? path : null;
+  // Background refresh calls go straight to the dedup+fetch path — they must
+  // NOT enter the SWR branch, otherwise each recursive call would see a cache
+  // hit and immediately spawn another background refresh, creating an infinite
+  // synchronous call stack (overflow swallowed by .catch(() => {})).
+  const swrKey   = isGet && !_isBackground ? path : null;
   const dedupKey = isGet ? `${method}:${path}` : null;
 
   // SWR: return stale immediately, background-refresh without blocking
   if (swrKey) {
     const cached = swrGet<T>(swrKey);
     if (cached !== null) {
-      // Kick off a background refresh if the in-flight map is clear
+      // Kick off a background refresh if the in-flight map is clear.
+      // Pass _isBackground=true so the recursive call skips this branch entirely.
       if (!_inFlight.has(dedupKey!)) {
-        const bg = apiFetch<T>(method, path, body, headers, 1, signal)
+        const bg = apiFetch<T>(method, path, body, headers, 1, signal, true)
           .then(fresh => { swrSet(swrKey, fresh); })
           .catch(() => { /* silent — stale stays valid */ });
         void bg;
