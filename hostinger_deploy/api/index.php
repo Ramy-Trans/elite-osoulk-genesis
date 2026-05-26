@@ -6,11 +6,11 @@ require_once __DIR__ . '/helpers.php';
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, X-Admin-Key, X-User-Id');
+header('Access-Control-Allow-Headers: Content-Type, X-Admin-Key, X-User-Id, Retry-After');
 header('X-Content-Type-Options: nosniff');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
-// ─── Route Parsing ────────────────────────────────────────────────────────────
+// ─── Route Parsing ──────────────────────────────────────────────────────────
 $method = $_SERVER['REQUEST_METHOD'];
 $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 // Strip /api/ prefix (handles /api/ and /subdir/api/)
@@ -18,7 +18,7 @@ $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
 $path      = ltrim(str_replace($scriptDir, '', $uri), '/');
 $path      = trim($path, '/');
 
-// ─── Router ───────────────────────────────────────────────────────────────────
+// ─── Router ────────────────────────────────────────────────────────────────
 try {
 
 // GET /health
@@ -32,7 +32,7 @@ if ($method === 'GET' && $path === 'db-test') {
     jsonResponse($result, $result['ok'] ? 200 : 503);
 }
 
-// POST /admin/login
+// POST /admin/login (NO RATE LIMITING FOR DEPLOYMENT)
 if ($method === 'POST' && $path === 'admin/login') {
     $b = getBody();
     if (($b['password'] ?? '') === ADMIN_PASSWORD) {
@@ -515,7 +515,7 @@ if ($method === 'PATCH' && preg_match('#^admin/sections/([^/]+)$#', $path, $m)) 
     jsonResponse($found);
 }
 
-// ─── Me / Inquiries ───────────────────────────────────────────────────────────
+// ─── Me / Inquiries ───────────────────────────────────────────────────────
 
 // GET /me/inquiries
 if ($method === 'GET' && $path === 'me/inquiries') {
@@ -589,7 +589,7 @@ if ($method === 'GET' && $path === 'me/leads/export') {
     exit;
 }
 
-// ─── Me / Listings ────────────────────────────────────────────────────────────
+// ─── Me / Listings ──────────────────────────────────────────────────────
 
 // GET /me/listings
 if ($method === 'GET' && $path === 'me/listings') {
@@ -651,7 +651,7 @@ if ($method === 'DELETE' && preg_match('#^me/listings/([^/]+)$#', $path, $m)) {
     jsonResponse(['message' => 'Deleted']);
 }
 
-// ─── Me / Projects (developer) ───────────────────────────────────────────────
+// ─── Me / Projects (developer) ──────────────────────────────────────────
 
 // GET /me/projects
 if ($method === 'GET' && $path === 'me/projects') {
@@ -697,7 +697,7 @@ if ($method === 'DELETE' && preg_match('#^me/projects/([^/]+)$#', $path, $m)) {
     jsonResponse(['message' => 'Deleted']);
 }
 
-// ─── Me / Saved Properties ────────────────────────────────────────────────────
+// ─── Me / Saved Properties ────────────────────────────────────────────────
 
 // GET /me/saved-properties
 if ($method === 'GET' && $path === 'me/saved-properties') {
@@ -734,7 +734,7 @@ if ($method === 'DELETE' && preg_match('#^me/saved-properties/([^/]+)$#', $path,
     jsonResponse($all[$uid] ?? []);
 }
 
-// ─── Me / Saved Searches ─────────────────────────────────────────────────────
+// ─── Me / Saved Searches ────────────────────────────────────────────────
 
 // GET /me/saved-searches
 if ($method === 'GET' && $path === 'me/saved-searches') {
@@ -789,7 +789,7 @@ if ($method === 'DELETE' && preg_match('#^me/saved-searches/([^/]+)$#', $path, $
     jsonResponse(['ok' => true]);
 }
 
-// ─── Me / Notifications ──────────────────────────────────────────────────────
+// ─── Me / Notifications ────────────────────────────────────────────────────
 
 // GET /me/notifications
 if ($method === 'GET' && $path === 'me/notifications') {
@@ -851,7 +851,7 @@ if ($method === 'PUT' && $path === 'me/alert-settings') {
     jsonResponse($all[$user['id']]);
 }
 
-// ─── Public Listings ─────────────────────────────────────────────────────────
+// ─── Public Listings ────────────────────────────────────────────────────────
 
 // GET /listings (public — approved only)
 if ($method === 'GET' && $path === 'listings') {
@@ -933,7 +933,7 @@ if ($method === 'DELETE' && preg_match('#^listings/([^/]+)$#', $path, $m)) {
     jsonResponse(['ok' => true]);
 }
 
-// ─── Analytics (admin) ───────────────────────────────────────────────────────
+// ─── Analytics (admin) ────────────────────────────────────────────────────────
 
 if ($method === 'GET' && $path === 'analytics') {
     requireAdmin();
@@ -977,7 +977,7 @@ if ($method === 'GET' && $path === 'analytics') {
     ]);
 }
 
-// ─── Articles ─────────────────────────────────────────────────────────────────
+// ─── Articles ───────────────────────────────────────────────────────────────
 
 if ($method === 'GET' && $path === 'articles') {
     $all    = getAllRows('articles');
@@ -1039,7 +1039,7 @@ if ($method === 'DELETE' && preg_match('#^articles/([^/]+)$#', $path, $m)) {
     jsonResponse(['message' => 'Deleted']);
 }
 
-// ─── FAQs ─────────────────────────────────────────────────────────────────────
+// ─── FAQs ───────────────────────────────────────────────────────────────────
 
 if ($method === 'GET' && $path === 'faqs') {
     jsonResponse(getAllRows('faqs'));
@@ -1081,7 +1081,7 @@ if ($method === 'DELETE' && preg_match('#^faqs/([^/]+)$#', $path, $m)) {
     jsonResponse(['message' => 'Deleted']);
 }
 
-// ─── Public Projects / Compounds ─────────────────────────────────────────────
+// ─── Public Projects / Compounds ──────────────────────────────────────────────
 
 if ($method === 'GET' && $path === 'projects') {
     $all = getAllRows('public_projects');
@@ -1141,7 +1141,7 @@ if ($method === 'DELETE' && preg_match('#^admin/projects/([^/]+)$#', $path, $m))
     jsonResponse(['message' => 'Deleted']);
 }
 
-// ─── CMS Pages ────────────────────────────────────────────────────────────────
+// ─── CMS Pages ──────────────────────────────────────────────────────────────
 
 if ($method === 'GET' && $path === 'pages') {
     $all = getAllRows('pages');
@@ -1202,7 +1202,7 @@ if ($method === 'DELETE' && preg_match('#^admin/pages/([^/]+)$#', $path, $m)) {
     jsonResponse(['message' => 'Deleted']);
 }
 
-// ─── HTML Snippets ────────────────────────────────────────────────────────────
+// ─── HTML Snippets ──────────────────────────────────────────────────────────
 
 if ($method === 'GET' && $path === 'html-snippets') {
     $all = getAllRows('html_snippets');
@@ -1247,11 +1247,11 @@ if ($method === 'DELETE' && preg_match('#^admin/html-snippets/([^/]+)$#', $path,
     jsonResponse(['message' => 'Deleted']);
 }
 
-// ─── Text Content ─────────────────────────────────────────────────────────────
+// ─── Text Content ───────────────────────────────────────────────────────────
 
 if ($method === 'GET' && $path === 'text-content') {
     $defaults = [
-        'hero'   => ['kicker' => 'المنصة العقارية الفاخرة في مصر', 'title' => 'اعثر على عقار أحلامك في مصر.', 'subtitle' => 'تجربة عقارية فاخرة.', 'ctaPrimary' => 'استكشف العقارات', 'ctaSecondary' => 'احصل على استشارة'],
+        'hero'   => ['kicker' => 'المنصة العقارية الفاخرة في مصر', 'title' => 'اعثر على عقار أحلامك في مصر.', 'subtitle' => 'تجربة عقارية فاخرة'],
         'navbar' => ['explore' => 'استكشف', 'sell' => 'بيع', 'reels' => 'فيديوهات', 'agencies' => 'وكالات', 'packages' => 'الباقات'],
         'footer' => ['tagline' => 'منصة أصولك — وساطة عقارية فاخرة في مصر', 'copy' => '© 2026 أصولك.'],
     ];
@@ -1269,7 +1269,7 @@ if ($method === 'PUT' && $path === 'text-content') {
     jsonResponse($merged);
 }
 
-// ─── Section SEO ──────────────────────────────────────────────────────────────
+// ─── Section SEO ────────────────────────────────────────────────────────────
 
 if ($method === 'GET' && $path === 'section-seo') {
     jsonResponse(getKv('section-seo', []));
@@ -1282,7 +1282,7 @@ if ($method === 'PUT' && $path === 'section-seo') {
     jsonResponse($b ?: []);
 }
 
-// ─── Media Upload ─────────────────────────────────────────────────────────────
+// ─── Media Upload ───────────────────────────────────────────────────────────
 
 if ($method === 'POST' && $path === 'admin/upload-media') {
     requireAdmin();
@@ -1303,7 +1303,7 @@ if ($method === 'POST' && $path === 'admin/upload-media') {
     jsonResponse(['url' => '/media/' . $fname]);
 }
 
-// ─── Media Gallery ────────────────────────────────────────────────────────────
+// ─── Media Gallery ──────────────────────────────────────────────────────────
 
 if ($method === 'GET' && $path === 'admin/media') {
     requireAdmin();
@@ -1346,14 +1346,14 @@ if ($method === 'DELETE' && preg_match('#^admin/media/([^/]+)$#', $path, $m)) {
     jsonResponse(['ok' => true]);
 }
 
-// ─── Server logs (stub) ───────────────────────────────────────────────────────
+// ─── Server logs (stub) ──────────────────────────────────────────────────────
 
 if ($method === 'GET' && $path === 'server/logs') {
     requireAdmin();
     jsonResponse([['time' => nowIso(), 'level' => 'info', 'msg' => 'PHP backend running on Hostinger']]);
 }
 
-// ─── 404 ──────────────────────────────────────────────────────────────────────
+// ─── 404 ────────────────────────────────────────────────────────────────────
 jsonResponse(['message' => "API endpoint not found: {$method} /{$path}"], 404);
 
 } catch (PDOException $e) {
