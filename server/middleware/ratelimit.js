@@ -2,14 +2,44 @@
  * In-memory IP rate limiter — no external dependencies.
  * Two tiers:
  *   default : 300 requests / 15 minutes
- *   strict  : 15  requests / 15 minutes  (auth endpoints)
+ *   strict  : 60  requests / 15 minutes  (auth endpoints)
+ *
+ * IP detection: Replit autoscale sits behind a reverse proxy that appends to
+ * X-Forwarded-For.  We take the LAST non-private IP in the list so that
+ * all users are not bucketed together under the proxy's own IP.
  */
 
-const WINDOW_MS  = 15 * 60 * 1000;
+const WINDOW_MS   = 15 * 60 * 1000;
 const DEFAULT_MAX = 300;
-const STRICT_MAX  = 15;
+const STRICT_MAX  = 60;
 
 const _store = new Map();
+
+function isPrivateIp(ip) {
+  return (
+    ip === "127.0.0.1" || ip === "::1" ||
+    ip.startsWith("10.")           ||
+    ip.startsWith("192.168.")      ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(ip)
+  );
+}
+
+function getClientIp(req) {
+  const xff = req.headers["x-forwarded-for"];
+  if (xff) {
+    const parts = xff.split(",").map(s => s.trim()).filter(Boolean);
+    // Walk right-to-left: first non-private entry is the real client
+    for (let i = parts.length - 1; i >= 0; i--) {
+      if (!isPrivateIp(parts[i])) return parts[i];
+    }
+    if (parts.length) return parts[0];
+  }
+  return (
+    req.headers["x-real-ip"]      ||
+    req.socket?.remoteAddress      ||
+    "unknown"
+  );
+}
 
 function getRecord(ip) {
   const now = Date.now();
@@ -19,14 +49,6 @@ function getRecord(ip) {
     _store.set(ip, rec);
   }
   return rec;
-}
-
-function getClientIp(req) {
-  return (
-    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-    req.socket?.remoteAddress ||
-    "unknown"
-  );
 }
 
 function buildLimiter(max) {

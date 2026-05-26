@@ -12,8 +12,12 @@ const USER_OBJ_KEY      = "osoulk_user_obj";
 // ─── Exponential backoff helper ───────────────────────────────────────────────
 function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
-function shouldRetry(status: number) {
-  return status === 429 || status === 502 || status === 503 || status === 504;
+function shouldRetry(status: number, method: string) {
+  // Never auto-retry 429 on non-idempotent methods (POST/PATCH/DELETE):
+  // retrying a rate-limited auth call burns more rate-limit slots and causes
+  // a cascade.  Only GET requests are safe to retry on 429.
+  if (status === 429) return method === "GET";
+  return status === 502 || status === 503 || status === 504;
 }
 
 // ─── In-flight deduplication ──────────────────────────────────────────────────
@@ -128,7 +132,7 @@ async function apiFetch<T>(
       });
 
       if (!res.ok) {
-        if (retriesLeft > 0 && shouldRetry(res.status)) {
+        if (retriesLeft > 0 && shouldRetry(res.status, method)) {
           const retryAfter = res.headers.get("Retry-After");
           const wait = retryAfter
             ? Number(retryAfter) * 1000
