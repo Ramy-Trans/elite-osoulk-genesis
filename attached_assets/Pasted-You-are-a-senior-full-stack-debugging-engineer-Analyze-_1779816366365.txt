@@ -1,0 +1,105 @@
+You are a senior full-stack debugging engineer.
+
+Analyze the ENTIRE codebase deeply and identify the root cause of:
+
+* "Too many requests"
+* intermittent login/signup failures
+* random admin login failures
+* unstable authentication behavior
+* occasional HTTP 404/503/fetch failures
+
+DO NOT rewrite the whole app.
+DO NOT create a new architecture unless absolutely necessary.
+FIRST perform a complete forensic debugging pass.
+
+Tasks:
+
+1. Trace ALL authentication flow:
+
+   * login
+   * signup
+   * session refresh
+   * auth listeners
+   * middleware
+   * redirects
+   * protected routes
+   * admin auth
+   * token refresh logic
+
+2. Detect:
+
+   * infinite loops
+   * recursive fetches
+   * repeated API calls
+   * middleware redirect loops
+   * duplicate useEffect executions
+   * duplicated auth subscriptions
+   * repeated retries
+   * service worker request duplication
+   * bad caching
+   * race conditions
+   * multiple simultaneous auth checks
+
+3. Inspect ALL React hooks:
+
+   * missing dependency arrays
+   * auth state loops
+   * rerender loops
+   * state updates causing repeated requests
+
+4. Inspect backend/API:
+
+   * repeated endpoints
+   * recursive API calls
+   * incorrect route paths
+   * broken middleware chains
+   * rate-limit triggers
+   * invalid session handling
+
+5. Inspect Supabase configuration:
+
+   * RLS recursion
+   * policies causing repeated queries
+   * broken auth triggers
+   * invalid session refresh handling
+   * repeated profile fetches
+
+6. Inspect service workers:
+
+   * stale cache issues
+   * duplicate requests
+   * fetch interception problems
+   * cached auth/session corruption
+
+7. Open browser/network debugging and identify:
+
+   * which exact request repeats excessively
+   * where the loop begins
+   * which component/function triggers it
+   * exact call chain
+
+8. Add temporary debugging logs ONLY where needed to trace:
+
+   * auth state changes
+   * redirects
+   * API calls
+   * session refreshes
+   * middleware execution
+
+9. Fix the root cause cleanly and minimally.
+   Avoid unnecessary rewrites.
+
+10. After fixing:
+
+* explain EXACTLY what caused the issue
+* explain why it was intermittent
+* explain which files were changed
+* explain how to prevent this in the future
+
+IMPORTANT:
+
+* Preserve existing UI/design.
+* Preserve database structure unless necessary.
+* Preserve existing functionality.
+* Focus on stability and debugging accuracy over speed.
+* Think like a production debugging engineer, not a code generator.
