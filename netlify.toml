@@ -7,10 +7,9 @@
   VITE_API_BASE = ""
 
 # Proxy /api/* to the Replit backend server-side — same origin, no CORS.
-# Update this URL if you redeploy to a new Replit instance.
 [[redirects]]
   from   = "/api/*"
-  to     = "https://elite-osoulk-genesis--omawobdnaoimnwb.replit.app/api/:splat"
+  to     = "https://f4e8c49d-5d4d-4118-87bf-85bc53763c88-00-1rjy0spubae9m.riker.replit.dev/api/:splat"
   status = 200
   force  = true
 
@@ -23,7 +22,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options        = "DENY"
+    X-Frame-Options        = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     X-XSS-Protection       = "1; mode=block"
     Referrer-Policy        = "strict-origin-when-cross-origin"

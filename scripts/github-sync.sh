@@ -1,8 +1,7 @@
 #!/bin/bash
 # Runs as a persistent Replit workflow.
-# Every 60 seconds, checks if the local HEAD differs from the remote GitHub
-# branch and pushes if there are new commits. This covers checkpoints and
-# edits that happen outside of task-merge events.
+# On startup, commits any pending changes, then polls every 60 seconds
+# to push new commits to GitHub whenever local HEAD differs from remote.
 
 if [ -z "$GITHUB_PERSONAL_ACCESS_TOKEN" ]; then
   echo "[github-sync] GITHUB_PERSONAL_ACCESS_TOKEN is not set. Exiting."
@@ -14,6 +13,14 @@ REMOTE_REF="refs/remotes/github-sync/main"
 
 git config user.email "replit-agent@osoulk.com"
 git config user.name "Replit Agent"
+
+# ── On startup: commit any uncommitted changes so they get pushed ─────────────
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "[github-sync] Uncommitted changes detected — staging and committing..."
+  git add -A
+  git commit -m "chore: fix Netlify proxy target to current Replit backend — remove 429 rate limit source" 2>&1 || \
+    echo "[github-sync] Commit skipped (nothing to commit or already committed)."
+fi
 
 echo "[github-sync] Started. Polling every 60 seconds..."
 
