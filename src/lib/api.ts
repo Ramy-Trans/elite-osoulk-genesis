@@ -1,4 +1,4 @@
-// ─── Express API client ────────────────────────────────────────────────────────
+// ─── Express API client ───────────────────────────────────────────────────────[...]
 // In dev:  VITE_API_BASE is empty → calls /api/* → proxied by Vite to port 3001
 // On Hostinger: set VITE_API_BASE=https://your-repl.replit.app at build time
 //   → all calls become https://your-repl.replit.app/api/*
@@ -171,7 +171,7 @@ async function apiFetchRaw<T>(method: string, path: string, headers?: Record<str
   return res.json() as Promise<T>;
 }
 
-// ─── Admin Auth ───────────────────────────────────────────────────────────────
+// ─── Admin Auth ─────────────────────────────────────────────────────────────
 export function getAdminKey(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(ADMIN_SESSION_KEY);
@@ -191,7 +191,7 @@ export async function adminLogin(password: string): Promise<{ token: string }> {
   return { token: data.token };
 }
 
-// ─── User session ─────────────────────────────────────────────────────────────
+// ─── User session ────────────────────────────────────────────────────────────
 export type Role = "individual" | "broker" | "developer" | "admin" | "data-entry";
 export type CurrentUser = {
   id: string; fullName: string; email: string; phone: string;
@@ -229,7 +229,7 @@ function rowToUser(r: Record<string, unknown>): CurrentUser {
   };
 }
 
-// ─── Subscribe ────────────────────────────────────────────────────────────────
+// ─── Subscribe ─────────────────────────────────────────────────────────────
 export async function subscribeEmail(email: string, name?: string) {
   return apiFetch<{ message: string }>("POST", "/api/subscribe", { email, name: name ?? "" });
 }
@@ -240,7 +240,7 @@ export async function getSubscribers() {
   );
 }
 
-// ─── Stats ────────────────────────────────────────────────────────────────────
+// ─── Stats ──────────────────────────────────────────────────────────────────
 export async function getStats() {
   return apiFetch<{
     subscribers: number; users: number; listings: number; reels: number;
@@ -250,7 +250,7 @@ export async function getStats() {
   }>("GET", "/api/stats");
 }
 
-// ─── Google OAuth ─────────────────────────────────────────────────────────────
+// ─── Google OAuth ───────────────────────────────────────────────────────────
 export async function googleLogin(credential: string) {
   const data = await apiFetch<{ user: Record<string,unknown>; message: string }>(
     "POST", "/api/auth/google", { credential },
@@ -258,7 +258,7 @@ export async function googleLogin(credential: string) {
   return { message: data.message, user: rowToUser(data.user) };
 }
 
-// ─── Users (admin) ────────────────────────────────────────────────────────────
+// ─── Users (admin) ──────────────────────────────────────────────────────────
 export type AdminUser = {
   id: string; fullName: string; email: string; phone: string;
   plan: string; role: string; status: string; createdAt: string;
@@ -325,10 +325,10 @@ export async function adminResetPassword(id: string, password?: string): Promise
   return res;
 }
 
-// ─── User login/register ──────────────────────────────────────────────────────
+// ─── User login/register ────────────────────────────────────────────────────
 export async function registerUser(data: { fullName: string; email: string; phone?: string; password: string }) {
   const res = await apiFetch<{ message: string; user: Record<string,unknown> }>(
-    "POST", "/api/admin/signup", data,
+    "POST", "/api/register", data,
   );
   return { message: res.message, user: rowToUser(res.user) };
 }
@@ -358,7 +358,7 @@ export async function updateMe(data: Partial<{ fullName: string; phone: string; 
   return rowToUser(res);
 }
 
-// ─── Reel Requests ────────────────────────────────────────────────────────────
+// ─── Reel Requests ──────────────────────────────────────────────────────────
 export type ReelRequest = {
   id: string; name: string; email: string; reason?: string;
   status: "pending" | "approved" | "rejected"; createdAt: string; updatedAt?: string;
@@ -392,7 +392,7 @@ export async function deleteReelRequest(id: string) {
   return apiFetch<{ message: string }>("DELETE", `/api/reel-requests/${id}`, undefined, adminHeaders());
 }
 
-// ─── SEO ──────────────────────────────────────────────────────────────────────
+// ─── SEO ────────────────────────────────────────────────────────────────────
 export type SeoPage = { title: string; description: string; keywords: string; updatedAt?: string };
 export type SeoData = Record<string, SeoPage>;
 
@@ -412,7 +412,7 @@ export async function deleteSeoPage(page: string): Promise<void> {
   await apiFetch("DELETE", `/api/seo/${page}`, undefined, adminHeaders());
 }
 
-// ─── Property Views ───────────────────────────────────────────────────────────
+// ─── Property Views ─────────────────────────────────────────────────────────
 export async function trackPropertyView(id: string) {
   try {
     return await apiFetch<{ views: number }>("POST", `/api/properties/${id}/view`);
@@ -426,7 +426,7 @@ export async function getPropertyViews(id: string): Promise<number> {
   } catch { return 0; }
 }
 
-// ─── Site Settings ────────────────────────────────────────────────────────────
+// ─── Site Settings ──────────────────────────────────────────────────────────
 export type SiteLogoSettings = {
   url: string; title: string; titleAr: string;
   altText: string; altTextAr: string;
@@ -495,7 +495,7 @@ export function applyThemeToDOM(theme: Record<string, string>): void {
   el.innerHTML = css;
 }
 
-// ─── Content Sections ─────────────────────────────────────────────────────────
+// ─── Content Sections ───────────────────────────────────────────────────────
 export type ContentSection = {
   id: string; label: string; visible: boolean; order: number;
   title?: string; titleAr?: string; subtitle?: string; subtitleAr?: string;
@@ -548,7 +548,7 @@ export async function updateSectionContent(id: string, data: Partial<ContentSect
   return rowToSection(res);
 }
 
-// ─── Inquiries / CRM Leads ────────────────────────────────────────────────────
+// ─── Inquiries / CRM Leads ──────────────────────────────────────────────────
 export type InquiryNote = { id: string; text: string; authorName: string; createdAt: string };
 export type Inquiry = {
   id: string; fromUserId: string; fromName: string; fromEmail: string;
@@ -624,7 +624,7 @@ export async function exportLeadsCsv(): Promise<Blob> {
   }
 }
 
-// ─── User Listings ────────────────────────────────────────────────────────────
+// ─── User Listings ──────────────────────────────────────────────────────────
 export type UserListing = {
   id: string; ownerId: string; ownerName: string; ownerRole: string; ownerPhone?: string;
   title: string; titleAr?: string; summary?: string; summaryAr?: string;
@@ -728,7 +728,7 @@ export async function deleteListing(id: string) {
   return apiFetch<{ message: string }>("DELETE", `/api/me/listings/${id}`, undefined, userHeaders());
 }
 
-// ─── Admin listing management ─────────────────────────────────────────────────
+// ─── Admin listing management ───────────────────────────────────────────────
 export async function getAdminListings(): Promise<UserListing[]> {
   const data = await apiFetch<Record<string,unknown>[]>(
     "GET", "/api/listings/all", undefined, adminHeaders(),
@@ -763,7 +763,7 @@ export async function getAllListingsAdmin(): Promise<UserListing[]> { return get
 export async function setListingApproval(id: string, status: "approved" | "rejected" | "pending") { return updateAdminListingApproval(id, status); }
 export async function adminDeleteListing(id: string) { return deleteAdminListing(id); }
 
-// ─── Public Listings ──────────────────────────────────────────────────────────
+// ─── Public Listings ────────────────────────────────────────────────────────
 export type PublicListing = UserListing;
 
 export async function getPublicListings(): Promise<PublicListing[]> {
@@ -780,7 +780,7 @@ export async function getPublicListing(id: string): Promise<PublicListing | null
   } catch { return null; }
 }
 
-// ─── Developer Projects ───────────────────────────────────────────────────────
+// ─── Developer Projects ─────────────────────────────────────────────────────
 export type Project = {
   id: string; developerId: string; developerName: string;
   name: string; location: string; units: number; soldUnits: number;
@@ -827,7 +827,7 @@ export async function deleteProject(id: string) {
   return apiFetch<{ message: string }>("DELETE", `/api/me/projects/${id}`, undefined, userHeaders());
 }
 
-// ─── Analytics ────────────────────────────────────────────────────────────────
+// ─── Analytics ──────────────────────────────────────────────────────────────
 export async function getAnalytics() {
   return apiFetch<{
     userGrowth: { label: string; users: number }[];
@@ -846,7 +846,7 @@ export async function getAnalytics() {
   }>("GET", "/api/analytics", undefined, adminHeaders());
 }
 
-// ─── Saved Searches ───────────────────────────────────────────────────────────
+// ─── Saved Searches ─────────────────────────────────────────────────────────
 export type SavedSearch = {
   id: string; name: string; filters: Record<string, string>;
   alertFrequency: string; paused: boolean; matchCount?: number;
@@ -895,7 +895,7 @@ export async function deleteSavedSearch(id: string): Promise<void> {
   await apiFetch("DELETE", `/api/me/saved-searches/${id}`, undefined, userHeaders());
 }
 
-// ─── Notifications ────────────────────────────────────────────────────────────
+// ─── Notifications ──────────────────────────────────────────────────────────
 export type ServerNotification = {
   id: string; type: string; title: string; body: string;
   read: boolean; propertyId?: string; searchId?: string;
@@ -940,7 +940,7 @@ export async function updateAlertSettings(data: Partial<AlertSettings>): Promise
   } catch { return { emailFrequency: "instant", inApp: true, ...data }; }
 }
 
-// ─── Articles ─────────────────────────────────────────────────────────────────
+// ─── Articles ───────────────────────────────────────────────────────────────
 export type Article = {
   id: string; title: string; titleAr: string; slug: string;
   category: string; categoryAr: string; summary: string; summaryAr: string;
@@ -1006,7 +1006,7 @@ export async function deleteArticle(id: string): Promise<void> {
   await apiFetch("DELETE", `/api/articles/${id}`, undefined, adminHeaders());
 }
 
-// ─── FAQs ─────────────────────────────────────────────────────────────────────
+// ─── FAQs ───────────────────────────────────────────────────────────────────
 export type FAQ = {
   id: string; question: string; questionAr: string; answer: string; answerAr: string;
   category: string; categoryAr: string; order: number;
@@ -1051,7 +1051,7 @@ export async function deleteFaq(id: string): Promise<void> {
   await apiFetch("DELETE", `/api/faqs/${id}`, undefined, adminHeaders());
 }
 
-// ─── Text Content ─────────────────────────────────────────────────────────────
+// ─── Text Content ───────────────────────────────────────────────────────────
 export async function getTextContent(): Promise<Record<string, Record<string, string>>> {
   try {
     return await apiFetch<Record<string, Record<string, string>>>("GET", "/api/text-content");
@@ -1064,7 +1064,7 @@ export async function updateTextContent(data: Record<string, Record<string, stri
   );
 }
 
-// ─── Section SEO ──────────────────────────────────────────────────────────────
+// ─── Section SEO ────────────────────────────────────────────────────────────
 export type SectionSeoData = {
   title?: string; titleAr?: string; subtitle?: string; subtitleAr?: string;
   body?: string; bodyAr?: string; ctaText?: string; ctaTextAr?: string; image?: string;
@@ -1084,7 +1084,7 @@ export async function updateSectionSeoData(data: Record<string, SectionSeoData>)
   );
 }
 
-// ─── Public Projects / Compounds ─────────────────────────────────────────────
+// ─── Public Projects / Compounds ────────────────────────────────────────────
 export type PublicProject = {
   id: string; slug: string; name: string; nameAr: string;
   developerName: string; developerNameAr: string;
@@ -1177,7 +1177,7 @@ export async function deleteAdminProject(id: string): Promise<void> {
   await apiFetch("DELETE", `/api/admin/projects/${id}`, undefined, adminHeaders());
 }
 
-// ─── CMS Pages ────────────────────────────────────────────────────────────────
+// ─── CMS Pages ──────────────────────────────────────────────────────────────
 export type CmsPage = {
   id: string; slug: string; title: string; titleAr?: string;
   heroImage?: string; heroTitle?: string; heroTitleAr?: string;
@@ -1306,7 +1306,7 @@ export async function deleteAdminPage(id: string): Promise<void> {
   await apiFetch("DELETE", `/api/admin/pages/${id}`, undefined, adminHeaders());
 }
 
-// ─── HTML Snippets ────────────────────────────────────────────────────────────
+// ─── HTML Snippets ──────────────────────────────────────────────────────────
 export type HtmlSnippet = {
   id: string; name: string; html: string;
   placement: "head" | "body-start" | "body-end" | "after-nav" | "before-footer";
@@ -1359,7 +1359,7 @@ export async function deleteHtmlSnippet(id: string): Promise<void> {
   await apiFetch("DELETE", `/api/admin/html-snippets/${id}`, undefined, adminHeaders());
 }
 
-// ─── Media Gallery ────────────────────────────────────────────────────────────
+// ─── Media Gallery ──────────────────────────────────────────────────────────
 export type MediaItem = {
   id: string; url: string; title: string; altText: string;
   caption: string; description: string; category: string;
@@ -1404,7 +1404,7 @@ export async function deleteMediaItem(id: string): Promise<void> {
   await apiFetch("DELETE", `/api/admin/media/${id}`, undefined, adminHeaders());
 }
 
-// ─── Activity Log ─────────────────────────────────────────────────────────────
+// ─── Activity Log ────────────────────────────────────────────────────────────
 export async function getActivityLog() {
   try {
     const data = await apiFetch<Record<string,unknown>[]>(
@@ -1419,7 +1419,7 @@ export async function getActivityLog() {
   } catch { return []; }
 }
 
-// ─── Server Health ────────────────────────────────────────────────────────────
+// ─── Server Health ──────────────────────────────────────────────────────────
 export async function getServerHealth() {
   try {
     return await apiFetchRaw<Record<string,unknown>>("GET", "/api/health");
@@ -1452,7 +1452,7 @@ export async function getDbStatus(): Promise<DbStatusResult> {
   }
 }
 
-// ─── Pages helper (for nav) ───────────────────────────────────────────────────
+// ─── Pages helper (for nav) ──────────────────────────────────────────────────
 export async function getPages() {
   return getPublicPages();
 }
