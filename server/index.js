@@ -1419,45 +1419,45 @@ if (!IS_SERVERLESS) {
   }
 }
 
-// ─── Start server ─────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, "0.0.0.0", () => {
-  const mode = db.isMysql ? "MySQL" : db.isPg ? "PostgreSQL (connecting…)" : "JSON files";
-  console.log(`[server] Osoulk API running on http://0.0.0.0:${PORT} [mode: ${mode}]`);
-  console.log(`[server] Admin auth: ADMIN_PASSWORD env var ${process.env.ADMIN_PASSWORD ? "SET" : "NOT SET — using default"}`);
-
-  // PostgreSQL: connect in background, never block startup
-  if (!process.env.DB_HOST && (process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL)) {
-    initPgPool()
-      .then(async (p) => {
-        if (p) {
-          setPgAvailable(true);
-          console.log("[pg] Adapter switched to PostgreSQL mode.");
-          try { await ensurePgSchema(); }
-          catch (e) { console.error("[pg] Schema init failed (non-fatal):", e.message); }
-        } else {
-          console.error("[pg] All PostgreSQL connections failed — using JSON files.");
-          startPgReconnectLoop(120_000);
-        }
-      })
-      .catch(err => {
-        console.error("[pg] Startup error (non-fatal):", err.message);
+// ─── DB initialisation (runs in all environments incl. serverless) ────────────
+if (!process.env.DB_HOST && (process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL)) {
+  initPgPool()
+    .then(async (p) => {
+      if (p) {
+        setPgAvailable(true);
+        console.log("[pg] Adapter switched to PostgreSQL mode.");
+        try { await ensurePgSchema(); }
+        catch (e) { console.error("[pg] Schema init failed (non-fatal):", e.message); }
+      } else {
+        console.error("[pg] All PostgreSQL connections failed — using JSON files.");
         startPgReconnectLoop(120_000);
-      });
-  }
+      }
+    })
+    .catch(err => {
+      console.error("[pg] Startup error (non-fatal):", err.message);
+      startPgReconnectLoop(120_000);
+    });
+}
 
-  // MySQL: connect in background
-  if (process.env.DB_HOST) {
-    testConnection(3, 2000).then(r => {
-      setDbAvailable(r.ok);
-      if (!r.ok) { console.error("[mysql] Could not connect — falling back to JSON files."); startReconnectLoop(120_000); }
-      else console.log("[mysql] Connected.");
-    }).catch(err => { setDbAvailable(false); startReconnectLoop(120_000); });
-  }
-});
+if (process.env.DB_HOST) {
+  testConnection(3, 2000).then(r => {
+    setDbAvailable(r.ok);
+    if (!r.ok) { console.error("[mysql] Could not connect — falling back to JSON files."); startReconnectLoop(120_000); }
+    else console.log("[mysql] Connected.");
+  }).catch(err => { setDbAvailable(false); startReconnectLoop(120_000); });
+}
 
-server.timeout = 25_000;
-server.keepAliveTimeout = 30_000;
-server.headersTimeout = 31_000;
+// ─── Start server (skipped in serverless environments) ────────────────────────
+if (!IS_SERVERLESS) {
+  const PORT = process.env.PORT || 5000;
+  const server = app.listen(PORT, "0.0.0.0", () => {
+    const mode = db.isMysql ? "MySQL" : db.isPg ? "PostgreSQL (connecting…)" : "JSON files";
+    console.log(`[server] Osoulk API running on http://0.0.0.0:${PORT} [mode: ${mode}]`);
+    console.log(`[server] Admin auth: ADMIN_PASSWORD env var ${process.env.ADMIN_PASSWORD ? "SET" : "NOT SET — using default"}`);
+  });
+  server.timeout = 25_000;
+  server.keepAliveTimeout = 30_000;
+  server.headersTimeout = 31_000;
+}
 
 export default app;
