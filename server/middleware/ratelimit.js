@@ -25,18 +25,17 @@ function isPrivateIp(ip) {
 }
 
 function getClientIp(req) {
+  // With `app.set("trust proxy", true)`, Express populates req.ip correctly.
+  // X-Forwarded-For is: "client, proxy1, proxy2" — leftmost is the real client.
   const xff = req.headers["x-forwarded-for"];
   if (xff) {
-    const parts = xff.split(",").map(s => s.trim()).filter(Boolean);
-    // Walk right-to-left: first non-private entry is the real client
-    for (let i = parts.length - 1; i >= 0; i--) {
-      if (!isPrivateIp(parts[i])) return parts[i];
-    }
-    if (parts.length) return parts[0];
+    const first = xff.split(",")[0].trim();
+    if (first) return first;
   }
   return (
-    req.headers["x-real-ip"]      ||
-    req.socket?.remoteAddress      ||
+    req.headers["x-real-ip"]  ||
+    req.ip                     ||
+    req.socket?.remoteAddress  ||
     "unknown"
   );
 }

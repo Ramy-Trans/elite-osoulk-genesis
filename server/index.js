@@ -86,10 +86,37 @@ function invalidateUserCache(id) { if (id) _userCache.delete(id); else _userCach
 
 // ─── Express setup ────────────────────────────────────────────────────────────
 const app = express();
+app.set("trust proxy", true);
 app.use(compression());
 app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] }));
 app.use(express.json({ limit: "5mb" }));
 app.use(requestLogger);
+
+// ─── Static SEO files — must be BEFORE the rate limiter ───────────────────
+{
+  const _STATIC_ROUTES = ["/", "/explore", "/agencies", "/packages", "/about", "/contact", "/reels", "/sell", "/faqs", "/articles", "/estimator"];
+  const _PROPERTY_IDS = ["ahel-masr-walkway", "green5-north", "nakheel-compound", "lamirada-duplex", "l010-142", "l010-b14", "standalone-villa", "tayba-garden", "beit-alwatan-6oct"];
+  const _AGENCY_IDS = ["ras-el-hekma", "97-hills", "blanca-gardens", "solana-east"];
+
+  app.get("/robots.txt", (_req, res) => {
+    const base = process.env.SITE_URL || "https://osoulk.app";
+    res.setHeader("Content-Type", "text/plain");
+    res.send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /dashboard\n\nSitemap: ${base}/sitemap.xml\n`);
+  });
+
+  app.get("/sitemap.xml", (_req, res) => {
+    const base = process.env.SITE_URL || "https://osoulk.app";
+    const now = new Date().toISOString().slice(0, 10);
+    const urls = [
+      ..._STATIC_ROUTES.map(r => ({ loc: `${base}${r}`, priority: r === "/" ? "1.0" : "0.8", changefreq: "weekly" })),
+      ..._PROPERTY_IDS.map(id => ({ loc: `${base}/properties/${id}`, priority: "0.9", changefreq: "weekly" })),
+      ..._AGENCY_IDS.map(id => ({ loc: `${base}/agencies/${id}`, priority: "0.7", changefreq: "monthly" })),
+    ];
+    res.setHeader("Content-Type", "application/xml");
+    res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${u.loc}</loc><lastmod>${now}</lastmod><changefreq>${u.changefreq}</changefreq><priority>${u.priority}</priority></url>`).join("\n")}\n</urlset>`);
+  });
+}
+
 app.use(rateLimiter);
 app.use(concurrencyLimiter);
 
@@ -839,27 +866,7 @@ app.get("/p/:slug", async (req, res) => {
   } catch { res.status(500).type("html").send("<h1>Server error</h1>"); }
 });
 
-// ─── Sitemap & Robots ─────────────────────────────────────────────────────────
-const STATIC_ROUTES = ["/", "/explore", "/agencies", "/packages", "/about", "/contact", "/reels", "/sell", "/faqs", "/articles", "/estimator"];
-const PROPERTY_IDS = ["ahel-masr-walkway", "green5-north", "nakheel-compound", "lamirada-duplex", "l010-142", "l010-b14", "standalone-villa", "tayba-garden", "beit-alwatan-6oct"];
-const AGENCY_IDS = ["ras-el-hekma", "97-hills", "blanca-gardens", "solana-east"];
-
-app.get("/sitemap.xml", (_req, res) => {
-  const base = process.env.SITE_URL || "https://osoulk.app";
-  const now = new Date().toISOString().slice(0, 10);
-  const urls = [
-    ...STATIC_ROUTES.map(r => ({ loc: `${base}${r}`, priority: r === "/" ? "1.0" : "0.8", changefreq: "weekly" })),
-    ...PROPERTY_IDS.map(id => ({ loc: `${base}/properties/${id}`, priority: "0.9", changefreq: "weekly" })),
-    ...AGENCY_IDS.map(id => ({ loc: `${base}/agencies/${id}`, priority: "0.7", changefreq: "monthly" })),
-  ];
-  res.setHeader("Content-Type", "application/xml");
-  res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${u.loc}</loc><lastmod>${now}</lastmod><changefreq>${u.changefreq}</changefreq><priority>${u.priority}</priority></url>`).join("\n")}\n</urlset>`);
-});
-app.get("/robots.txt", (_req, res) => {
-  const base = process.env.SITE_URL || "https://osoulk.app";
-  res.setHeader("Content-Type", "text/plain");
-  res.send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /dashboard\n\nSitemap: ${base}/sitemap.xml\n`);
-});
+// ─── Sitemap & Robots — defined early (before rate limiter) in server setup ───
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ADMIN ROUTES
