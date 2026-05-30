@@ -444,7 +444,7 @@ export const articleCards = [
   { title: "Why video reels convert premium property leads", category: "Seller Growth", href: "/reels", image: interiorImage },
 ];
 
-export function PageHero({ kicker, title, subtitle, image = heroImage, children }: { kicker: string; title: string; subtitle: string; image?: string; children?: React.ReactNode }) {
+export function PageHero({ kicker, title, subtitle, image = heroImage, children, showSearch = false }: { kicker: string; title: string; subtitle: string; image?: string; children?: React.ReactNode; showSearch?: boolean }) {
   const { t, lang } = useLang();
   const [slides, setSlides] = useState<{ image: string; title?: string; titleAr?: string; subtitle?: string; subtitleAr?: string; ctaText?: string; ctaTextAr?: string; ctaLink?: string }[]>([]);
   const [current, setCurrent] = useState(0);
@@ -487,7 +487,7 @@ export function PageHero({ kicker, title, subtitle, image = heroImage, children 
         <img src={activeImage} alt="Luxury real estate background" className="absolute inset-0 -z-10 h-full w-full object-cover opacity-35 cinematic-pan" />
       )}
 
-      <div className="os-container grid min-h-[440px] items-center gap-10 lg:grid-cols-[1.08fr_.92fr]">
+      <div className={`os-container grid min-h-[440px] items-center gap-10 ${showSearch ? "lg:grid-cols-[1.08fr_.92fr]" : ""}`}>
         <div className="max-w-3xl text-primary-foreground reveal-up">
           <p className="section-kicker text-gold-soft">{kicker}</p>
           <h1 className="mt-5 text-5xl font-black leading-tight sm:text-7xl">
@@ -521,9 +521,11 @@ export function PageHero({ kicker, title, subtitle, image = heroImage, children 
             </div>
           )}
         </div>
-        <div className="glass-panel rounded-2xl p-5 reveal-up reveal-delay">
-          {children ?? <SearchPanel />}
-        </div>
+        {showSearch && (
+          <div className="glass-panel rounded-2xl p-5 reveal-up reveal-delay">
+            {children ?? <SearchPanel />}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -68,6 +68,7 @@ function Index() {
         kicker={t("hero.kicker")}
         title={t("hero.title")}
         subtitle={t("hero.subtitle")}
+        showSearch
       />
 
       <section className="py-16">
