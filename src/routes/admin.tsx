@@ -2900,6 +2900,7 @@ function FAQsTab() {
   const emptyForm = (): Partial<FAQ> => ({
     question: "", questionAr: "", answer: "", answerAr: "",
     category: "", categoryAr: "", order: faqs.length + 1,
+    status: "published",
     seoTitle: "", seoTitleAr: "", seoDescription: "", seoDescriptionAr: "",
     seoKeywords: [], seoKeywordsAr: [], canonicalUrl: "", seoImage: "",
   });
@@ -3007,6 +3008,13 @@ function FAQsTab() {
                       <div>
                         <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">الترتيب</label>
                         <input type="number" min={1} value={form.order || 1} onChange={e => setForm(f => ({ ...f, order: Number(e.target.value) }))} className="mt-1.5 h-10 w-full rounded-xl border bg-background px-3 text-sm focus:outline-none" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">حالة النشر</label>
+                      <div className="mt-1.5 flex gap-2">
+                        <button type="button" onClick={() => setForm(f => ({ ...f, status: "published" }))} className={`flex-1 rounded-xl border px-4 py-2 text-sm font-bold transition-colors ${(form as any).status === "published" ? "bg-navy text-white border-navy" : "bg-background text-muted-foreground hover:bg-secondary"}`}>منشور</button>
+                        <button type="button" onClick={() => setForm(f => ({ ...f, status: "draft" }))} className={`flex-1 rounded-xl border px-4 py-2 text-sm font-bold transition-colors ${(form as any).status === "draft" ? "bg-orange-500 text-white border-orange-500" : "bg-background text-muted-foreground hover:bg-secondary"}`}>مسودة</button>
                       </div>
                     </div>
                   </div>
@@ -3144,7 +3152,7 @@ function FAQsTab() {
               <div className="overflow-x-auto rounded-2xl border bg-card shadow-float">
                 <table className="w-full min-w-[600px] text-sm">
                   <thead className="border-b bg-secondary">
-                    <tr>{["Question", "Answer", "Order", "Actions"].map(h => <th key={h} className="px-5 py-3 text-right text-xs font-black uppercase tracking-wide text-muted-foreground">{h}</th>)}</tr>
+                    <tr>{["Question", "Answer", "Order", "Status", "Actions"].map(h => <th key={h} className="px-5 py-3 text-right text-xs font-black uppercase tracking-wide text-muted-foreground">{h}</th>)}</tr>
                   </thead>
                   <tbody className="divide-y">
                     {items.map(faq => (
@@ -3152,6 +3160,7 @@ function FAQsTab() {
                         <td className="px-5 py-3.5 max-w-xs"><p className="font-bold text-navy line-clamp-2">{faq.questionAr || faq.question}</p></td>
                         <td className="px-5 py-3.5 text-muted-foreground max-w-xs"><p className="line-clamp-2">{faq.answerAr || faq.answer}</p></td>
                         <td className="px-5 py-3.5 text-center font-bold text-navy">{faq.order}</td>
+                        <td className="px-5 py-3.5"><span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${faq.status === "published" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-600"}`}>{faq.status === "published" ? "منشور" : "مسودة"}</span></td>
                         <td className="px-5 py-3.5">
                           <div className="flex gap-2">
                             <button onClick={() => openEdit(faq)} className="flex items-center gap-1 rounded-lg bg-navy/5 px-2.5 py-1.5 text-xs font-bold text-navy hover:bg-navy/10"><Edit2 className="h-3.5 w-3.5" /> Edit</button>

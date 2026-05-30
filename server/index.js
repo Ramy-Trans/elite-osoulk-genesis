@@ -731,8 +731,11 @@ app.get("/api/articles/:id", async (req, res) => {
 });
 
 // ─── FAQs ─────────────────────────────────────────────────────────────────────
-app.get("/api/faqs", async (_req, res) => {
-  try { res.json(await db.getAll("faqs")); } catch { res.status(500).json({ message: "Server error" }); }
+app.get("/api/faqs", async (req, res) => {
+  try {
+    const all = await db.getAll("faqs");
+    res.json(req.query.status ? all.filter(f => f.status === req.query.status) : all);
+  } catch { res.status(500).json({ message: "Server error" }); }
 });
 
 // ─── Site Settings ────────────────────────────────────────────────────────────
@@ -844,16 +847,30 @@ const STATIC_ROUTES = ["/", "/explore", "/agencies", "/packages", "/about", "/co
 const PROPERTY_IDS = ["ahel-masr-walkway", "green5-north", "nakheel-compound", "lamirada-duplex", "l010-142", "l010-b14", "standalone-villa", "tayba-garden", "beit-alwatan-6oct"];
 const AGENCY_IDS = ["ras-el-hekma", "97-hills", "blanca-gardens", "solana-east"];
 
-app.get("/sitemap.xml", (_req, res) => {
+app.get("/sitemap.xml", async (_req, res) => {
   const base = process.env.SITE_URL || "https://osoulk.com";
   const now = new Date().toISOString().slice(0, 10);
-  const urls = [
-    ...STATIC_ROUTES.map(r => ({ loc: `${base}${r}`, priority: r === "/" ? "1.0" : "0.8", changefreq: "weekly" })),
-    ...PROPERTY_IDS.map(id => ({ loc: `${base}/properties/${id}`, priority: "0.9", changefreq: "weekly" })),
-    ...AGENCY_IDS.map(id => ({ loc: `${base}/agencies/${id}`, priority: "0.7", changefreq: "monthly" })),
-  ];
-  res.setHeader("Content-Type", "application/xml");
-  res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${u.loc}</loc><lastmod>${now}</lastmod><changefreq>${u.changefreq}</changefreq><priority>${u.priority}</priority></url>`).join("\n")}\n</urlset>`);
+  try {
+    const [pages, articles, projects, userListings] = await Promise.all([
+      db.getAll("pages").catch(() => []),
+      db.getAll("articles").catch(() => []),
+      db.getAll("projects").catch(() => []),
+      db.getAll("user-listings").catch(() => []),
+    ]);
+    const urls = [
+      ...STATIC_ROUTES.map(r => ({ loc: `${base}${r}`, priority: r === "/" ? "1.0" : "0.8", changefreq: "weekly" })),
+      ...PROPERTY_IDS.map(id => ({ loc: `${base}/properties/${id}`, priority: "0.9", changefreq: "weekly" })),
+      ...AGENCY_IDS.map(id => ({ loc: `${base}/agencies/${id}`, priority: "0.7", changefreq: "monthly" })),
+      ...pages.filter(p => p.publishStatus === "published").map(p => ({ loc: `${base}/pages/${p.slug}`, priority: "0.6", changefreq: "monthly" })),
+      ...articles.filter(a => a.status === "published").map(a => ({ loc: `${base}/articles/${a.slug || a.id}`, priority: "0.7", changefreq: "weekly" })),
+      ...projects.filter(p => p.publishStatus === "published").map(p => ({ loc: `${base}/projects/${p.slug || p.id}`, priority: "0.7", changefreq: "weekly" })),
+      ...userListings.filter(l => l.approvalStatus === "approved").map(l => ({ loc: `${base}/properties/${l.id}`, priority: "0.8", changefreq: "weekly" })),
+    ];
+    res.setHeader("Content-Type", "application/xml");
+    res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${u.loc}</loc><lastmod>${now}</lastmod><changefreq>${u.changefreq}</changefreq><priority>${u.priority}</priority></url>`).join("\n")}\n</urlset>`);
+  } catch {
+    res.status(500).send("Sitemap generation failed");
+  }
 });
 app.get("/robots.txt", (_req, res) => {
   const base = process.env.SITE_URL || "https://osoulk.com";
@@ -1174,7 +1191,8 @@ app.post("/api/faqs", requireAdmin, async (req, res) => {
   try {
     const { question = "", questionAr = "", answer = "", answerAr = "", category = "general", categoryAr = "", order = 0, seoTitle = "", seoTitleAr = "", seoDescription = "", seoDescriptionAr = "", seoKeywords = [], seoKeywordsAr = [], canonicalUrl = "", seoImage = "" } = req.body ?? {};
     if (!questionAr || !answerAr) return res.status(400).json({ message: "Arabic question and answer are required." });
-    const faq = { id: randomUUID(), question, questionAr, answer, answerAr, category, categoryAr, order, seoTitle, seoTitleAr, seoDescription, seoDescriptionAr, seoKeywords, seoKeywordsAr, canonicalUrl, seoImage, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    const { status = "draft" } = req.body ?? {};
+    const faq = { id: randomUUID(), question, questionAr, answer, answerAr, category, categoryAr, order, status, seoTitle, seoTitleAr, seoDescription, seoDescriptionAr, seoKeywords, seoKeywordsAr, canonicalUrl, seoImage, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     await db.insert("faqs", faq);
     res.json(faq);
   } catch { res.status(500).json({ message: "Server error" }); }

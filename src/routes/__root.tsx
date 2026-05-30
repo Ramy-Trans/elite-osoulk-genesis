@@ -285,11 +285,19 @@ function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const [menuPages, setMenuPages] = useState<{ slug: string; title: string; titleAr: string }[]>([]);
   useEffect(() => {
     setUser(getCachedUser());
     function onStorage() { setUser(getCachedUser()); }
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
+  }, []);
+  useEffect(() => {
+    import("@/lib/api").then(({ getPublicPages }) => {
+      getPublicPages()
+        .then(pages => setMenuPages(pages.filter(p => p.showInMenu).map(p => ({ slug: p.slug, title: p.title, titleAr: p.titleAr ?? "" }))))
+        .catch(() => {});
+    });
   }, []);
 
   const mainNavItems = [
@@ -482,6 +490,23 @@ function Header() {
               <Button asChild size="sm" className="col-span-1" onClick={() => setMobileMenuOpen(false)}>
                 <Link to="/create-listing">{t("header.createListing")}</Link>
               </Button>
+
+              {/* Dynamic CMS pages — mobile sheet */}
+              {menuPages.length > 0 && (
+                <div className="col-span-2 border-t pt-2 -mx-2">
+                  {menuPages.map(p => (
+                    <Link
+                      key={p.slug}
+                      to="/pages/$slug"
+                      params={{ slug: p.slug }}
+                      className="flex items-center rounded-xl px-4 py-3 text-sm font-bold text-navy transition-colors hover:bg-secondary"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {lang === "ar" && p.titleAr ? p.titleAr : p.title}
+                    </Link>
+                  ))}
+                </div>
+              )}
 
               {/* Language dropdown — mobile sheet */}
               <LanguageDropdown variant="mobile" />

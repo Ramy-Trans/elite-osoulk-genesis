@@ -70,7 +70,7 @@ function FAQs() {
   const [schema, setSchema] = useState<string>("");
 
   useEffect(() => {
-    getFaqs().then(data => {
+    getFaqs("published").then(data => {
       setDynamicFaqs(data);
     }).catch((err) => { console.error("[faqs] API request failed:", err); });
   }, []);

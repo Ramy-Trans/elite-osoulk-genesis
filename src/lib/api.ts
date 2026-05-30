@@ -1016,6 +1016,7 @@ export async function deleteArticle(id: string): Promise<void> {
 export type FAQ = {
   id: string; question: string; questionAr: string; answer: string; answerAr: string;
   category: string; categoryAr: string; order: number;
+  status: "draft" | "published";
   seoTitle: string; seoTitleAr?: string; seoDescription: string; seoDescriptionAr?: string;
   seoKeywords: string[]; seoKeywordsAr?: string[]; canonicalUrl?: string; seoImage?: string;
   createdAt: string; updatedAt: string;
@@ -1028,6 +1029,7 @@ function rowToFaq(r: Record<string, unknown>): FAQ {
     answer: String(r.answer ?? ""), answerAr: String(r.answerAr ?? ""),
     category: String(r.category ?? ""), categoryAr: String(r.categoryAr ?? ""),
     order: r.order as number ?? r.sort_order as number ?? 0,
+    status: (r.status as "draft" | "published") ?? "published",
     seoTitle: String(r.seoTitle ?? ""), seoTitleAr: r.seoTitleAr as string,
     seoDescription: String(r.seoDescription ?? ""), seoDescriptionAr: r.seoDescriptionAr as string,
     seoKeywords: r.seoKeywords as string[] ?? [], seoKeywordsAr: r.seoKeywordsAr as string[],
@@ -1036,9 +1038,10 @@ function rowToFaq(r: Record<string, unknown>): FAQ {
   };
 }
 
-export async function getFaqs(): Promise<FAQ[]> {
+export async function getFaqs(status?: string): Promise<FAQ[]> {
   try {
-    const data = await apiFetch<Record<string,unknown>[]>("GET", "/api/faqs");
+    const url = status ? `/api/faqs?status=${status}` : "/api/faqs";
+    const data = await apiFetch<Record<string,unknown>[]>("GET", url);
     return data.map(rowToFaq);
   } catch { return []; }
 }
