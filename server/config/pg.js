@@ -46,6 +46,18 @@ async function buildPool(connectionString) {
 
   const useSSL = isExternalHost || process.env.NODE_ENV === "production";
 
+  // For external cloud DBs, also force IPv4 resolution so we never attempt
+  // an IPv6 connection (Replit containers often cannot reach IPv6 addresses).
+  if (isExternalHost) {
+    const ipv4Address = await resolveIPv4(hostname);
+    if (ipv4Address && ipv4Address !== hostname) {
+      const lastAt  = connectionString.lastIndexOf("@");
+      const afterAt = connectionString.slice(lastAt + 1);
+      connStr = connectionString.slice(0, lastAt + 1) + afterAt.replace(hostname, ipv4Address);
+      console.log(`[pg] ${hostname} → ${ipv4Address} (IPv4, external)`);
+    }
+  }
+
   const p = new Pool({
     connectionString: connStr,
     // rejectUnauthorized:false lets self-signed / private CA certs through.
