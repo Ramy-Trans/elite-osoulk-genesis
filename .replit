@@ -61,6 +61,7 @@ run = ["node", "server/index.js"]
 [userenv.shared]
 NODE_ENV = "production"
 PORT = "5000"
+SUPABASE_URL = "https://yptvhitwfcjjylrqveax.supabase.co"
 
 [userenv.development]
 

@@ -79,8 +79,8 @@ export async function initPgPool() {
   if (pool) return pool;
 
   const candidates = [
-    process.env.DATABASE_URL,
     process.env.SUPABASE_DATABASE_URL,
+    process.env.DATABASE_URL,
   ].filter(Boolean);
 
   if (!candidates.length) return null;

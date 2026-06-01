@@ -18,6 +18,7 @@ import {
   Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend,
 } from "recharts";
 import { Button } from "@/components/ui/button";
+import { RichTextEditor } from "@/components/osoulk/RichTextEditor";
 import {
   adminLogin, setAdminKey, clearAdminKey, getAdminKey,
   getSubscribers, getStats, getUsers, updateUser, deleteUser,
@@ -2138,9 +2139,13 @@ function SectionContentEditor({
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-muted-foreground">{isAr ? "نص الجسم" : "Body Text"}</label>
-            <textarea value={isAr ? (data.bodyAr || "") : (data.body || "")} onChange={e => set(isAr ? "bodyAr" : "body", e.target.value)}
-              rows={4} className="w-full rounded-lg border bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20"
-              placeholder={isAr ? "المحتوى النصي للقسم…" : "Section body text…"} />
+            <RichTextEditor
+              value={isAr ? (data.bodyAr || "") : (data.body || "")}
+              onChange={v => set(isAr ? "bodyAr" : "body", v)}
+              placeholder={isAr ? "المحتوى النصي للقسم…" : "Section body text…"}
+              dir={isAr ? "rtl" : "ltr"}
+              minRows={4}
+            />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-muted-foreground">{isAr ? "نص الزر (CTA)" : "CTA Button Text"}</label>
@@ -2629,7 +2634,7 @@ function ArticlesTab() {
                     </div>
                     <div>
                       <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">{t("admin.articles.contentAr")}</label>
-                      <textarea value={form.contentAr || ""} onChange={e => setForm(f => ({ ...f, contentAr: e.target.value }))} rows={10} className="mt-1.5 w-full rounded-xl border bg-background px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-navy/20" placeholder="اكتب محتوى المقال هنا…" />
+                      <RichTextEditor value={form.contentAr || ""} onChange={v => setForm(f => ({ ...f, contentAr: v }))} placeholder="اكتب محتوى المقال هنا…" dir="rtl" minRows={10} className="mt-1.5" />
                     </div>
                   </div>
                 )}
@@ -2652,7 +2657,7 @@ function ArticlesTab() {
                     </div>
                     <div>
                       <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">{t("admin.articles.contentEn")}</label>
-                      <textarea value={form.content || ""} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} rows={10} className="mt-1.5 w-full rounded-xl border bg-background px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-navy/20" placeholder="Write article content here…" />
+                      <RichTextEditor value={form.content || ""} onChange={v => setForm(f => ({ ...f, content: v }))} placeholder="Write article content here…" dir="ltr" minRows={10} className="mt-1.5" />
                     </div>
                   </div>
                 )}
@@ -2998,7 +3003,7 @@ function FAQsTab() {
                     </div>
                     <div>
                       <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">الجواب *</label>
-                      <textarea required value={form.answerAr || ""} onChange={e => setForm(f => ({ ...f, answerAr: e.target.value }))} rows={6} className="mt-1.5 w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20" placeholder="الجواب بالعربية" />
+                      <RichTextEditor value={form.answerAr || ""} onChange={v => setForm(f => ({ ...f, answerAr: v }))} placeholder="الجواب بالعربية" dir="rtl" minRows={6} className="mt-1.5" />
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
@@ -3028,7 +3033,7 @@ function FAQsTab() {
                     </div>
                     <div>
                       <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Answer (EN)</label>
-                      <textarea value={form.answer || ""} onChange={e => setForm(f => ({ ...f, answer: e.target.value }))} rows={6} className="mt-1.5 w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20" placeholder="Answer in English" />
+                      <RichTextEditor value={form.answer || ""} onChange={v => setForm(f => ({ ...f, answer: v }))} placeholder="Answer in English" dir="ltr" minRows={6} className="mt-1.5" />
                     </div>
                     <div>
                       <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Category (EN)</label>
@@ -3258,9 +3263,13 @@ function SectionTextSeoEditor({
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-muted-foreground">{isAr ? "نص الجسم" : "Body Text"}</label>
-              <textarea value={isAr ? (data.bodyAr || "") : (data.body || "")} onChange={e => onChange(isAr ? "bodyAr" : "body", e.target.value)}
-                rows={4} className="w-full rounded-lg border bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20"
-                placeholder={isAr ? "المحتوى النصي للقسم…" : "Section body text…"} />
+              <RichTextEditor
+                value={isAr ? (data.bodyAr || "") : (data.body || "")}
+                onChange={v => onChange(isAr ? "bodyAr" : "body", v)}
+                placeholder={isAr ? "المحتوى النصي للقسم…" : "Section body text…"}
+                dir={isAr ? "rtl" : "ltr"}
+                minRows={4}
+              />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-muted-foreground">{isAr ? "نص الزر (CTA)" : "CTA Button Text"}</label>
@@ -4028,9 +4037,13 @@ function PageEditView({
           <div>
             <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-muted-foreground">المحتوى</label>
             <p className="mb-1.5 text-xs text-muted-foreground">يدعم HTML الأساسي — يظهر على /pages/{editing.slug || "…"}</p>
-            <textarea value={editing.contentAr || ""} onChange={e => set("contentAr", e.target.value)}
-              rows={14} className="w-full rounded-lg border bg-background p-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-navy/20"
-              placeholder="اكتب محتوى الصفحة هنا… (HTML مدعوم)" />
+            <RichTextEditor
+              value={editing.contentAr || ""}
+              onChange={v => set("contentAr", v)}
+              placeholder="اكتب محتوى الصفحة هنا…"
+              dir="rtl"
+              minRows={14}
+            />
           </div>
         </div>
       )}
@@ -4055,9 +4068,13 @@ function PageEditView({
           <div>
             <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-muted-foreground">Content</label>
             <p className="mb-1.5 text-xs text-muted-foreground">Basic HTML is supported — displayed on /pages/{editing.slug || "…"}</p>
-            <textarea value={editing.content || ""} onChange={e => set("content", e.target.value)}
-              rows={14} className="w-full rounded-lg border bg-background p-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-navy/20"
-              placeholder="Write page content here… (HTML supported)" />
+            <RichTextEditor
+              value={editing.content || ""}
+              onChange={v => set("content", v)}
+              placeholder="Write page content here…"
+              dir="ltr"
+              minRows={14}
+            />
           </div>
         </div>
       )}
